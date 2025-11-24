@@ -22,7 +22,7 @@ countries: ['BE']
 
 snapshots:
   start: "2013-03-01"
-  end: "2013-03-08"
+  end: "2013-03-10"
 
 electricity:
   co2limit_enable: true
