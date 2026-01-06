@@ -209,3 +209,11 @@ New data should generally not be added to the data, but externally retrieved in 
 - **Link:** https://publications.jrc.ec.europa.eu/repository/handle/JRC98626
 - **License:** CC-BY 4.0 (`reference <https://commission.europa.eu/legal-notice_en#copyright-notice>`__)
 - **Description:** Contains transport costs for different types of biomass.
+
+
+``data/ffe_industry_load_profiles.json``
+
+- **Source:** Forschungsstelle für Energiewirtschaft e.V. (FfE)
+- **Link:** https://opendata.ffe.de/dataset/normalized-industrial-electrical-load-profiles-germany/
+- **License:** CC-BY 4.0
+- **Description:** Contains synthetic industrial electricity load profiles for different industry sectors in Germany.

@@ -5003,15 +5003,51 @@ def add_industry(
         )
         n.loads_t.p_set[loads_i] *= factor
 
-    n.add(
-        "Load",
-        nodes,
-        suffix=" industry electricity",
-        bus=nodes,
-        carrier="industry electricity",
-        p_set=industrial_demand.loc[nodes, "electricity"] / nhours,
+    # Check if temporal profiles should be used
+    use_temporal = snakemake.params.industry.get(
+        "temporal_electricity_industry_load", False
     )
 
+    if use_temporal and snakemake.input.industrial_electricity_profiles:
+        logger.info("Using temporal industrial electricity demand profiles")
+
+        # Load hourly profiles (MW)
+        industrial_elec_profiles = pd.read_csv(
+            snakemake.input.industrial_electricity_profiles,
+            index_col=0,
+            parse_dates=True,
+        )
+
+        industrial_loads = industrial_elec_profiles.rename(
+            columns=lambda x: f"{x} industry electricity"
+        )
+
+        # Create a Series with load names as index and bus names as values
+        # This ensures index alignment instead of relying on positional matching
+        bus_series = pd.Series(
+            industrial_elec_profiles.columns.values,
+            index=industrial_loads.columns,
+        )
+
+        n.add(
+            "Load",
+            industrial_loads.columns,
+            bus=bus_series,
+            carrier="industry electricity",
+            p_set=industrial_loads,
+        )
+
+    else:
+        logger.info("Using constant industrial electricity demand")
+        n.add(
+            "Load",
+            nodes,
+            suffix="industry electricity",
+            bus=nodes,
+            carrier="industry electricity",
+            p_set=industrial_demand.loc[nodes, "electricty"] / nhours,
+        )
+        
     n.add(
         "Bus",
         spatial.co2.process_emissions,
