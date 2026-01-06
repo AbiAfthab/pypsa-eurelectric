@@ -4,6 +4,7 @@
 
 import os
 import requests
+import json
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from shutil import move, unpack_archive, rmtree, copy2
@@ -1158,3 +1159,26 @@ if (MOBILITY_PROFILES_DATASET := dataset_version("mobility_profiles"))["source"]
         run:
             copy2(input["kfz"], output["kfz"])
             copy2(input["pkw"], output["pkw"])
+
+
+if config["enable]["retrieve"]:
+   
+    rule retrieve_ffe_load_profiles:
+         output:
+           "data/ffe_industry_load_profiles.json",
+        log:
+           "logs/retrieve_ffe_load_profiles.log",
+        resources:
+           mem_mb=1000,
+        retries: 2
+        run:
+            data = requests.get(
+                "https://api.opendata.ffe.de/opendata",
+                params={"id_opendata": 59}
+            ).json()
+
+            with open(output[0], "w") as f:
+                  json.dump(data,f)
+
+
+   
