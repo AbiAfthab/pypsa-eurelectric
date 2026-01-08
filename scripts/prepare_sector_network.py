@@ -4499,6 +4499,7 @@ def add_industry(
     spatial: SimpleNamespace,
     cf_industry: dict,
     investment_year: int,
+    snakemake,
 ):
     """
     Add industry and their corresponding carrier buses to the network.
@@ -6469,6 +6470,7 @@ if __name__ == "__main__":
             spatial=spatial,
             cf_industry=cf_industry,
             investment_year=investment_year,
+            snakemake=snakemake,
         )
 
     if options["shipping"]:
