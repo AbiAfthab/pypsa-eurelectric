@@ -17,7 +17,7 @@ remote:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#run
 run:
   prefix: ""
-  name: ""
+  name: "Test_2030"
   scenarios:
     enable: false
     file: config/scenarios.yaml
@@ -34,50 +34,54 @@ foresight: overnight
 # Wildcard docs in https://pypsa-eur.readthedocs.io/en/latest/wildcards.html
 scenario:
   clusters:
-  - 50
+  - 10
   opts:
   - ''
   sector_opts:
   - ''
   planning_horizons:
-  - 2050
+  - 2030
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#countries
 countries:
-- AL
-- AT
-- BA
-- BE
-- BG
-- CH
-- CZ
 - DE
-- DK
-- EE
-- ES
-- FI
-- FR
-- GB
-- GR
-- HR
-- HU
-- IE
-- IT
-- LT
-- LU
-- LV
-- ME
-- MK
 - NL
-- 'NO'
-- PL
-- PT
-- RO
-- RS
-- SE
-- SI
-- SK
-- XK
+- BE
+- FR
+# - AL
+# - AT
+# - BA
+# - BE
+# - BG
+# - CH
+# - CZ
+# - DE
+# - DK
+# - EE
+# - ES
+# - FI
+# - FR
+# - GB
+# - GR
+# - HR
+# - HU
+# - IE
+# - IT
+# - LT
+# - LU
+# - LV
+# - ME
+# - MK
+# - NL
+# - 'NO'
+# - PL
+# - PT
+# - RO
+# - RS
+# - SE
+# - SI
+# - SK
+# - XK
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#snapshots
 snapshots:
@@ -88,6 +92,7 @@ snapshots:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#enable
 enable:
   drop_leap_day: true
+  retrieve: true
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#co2-budget
 co2_budget:
@@ -939,7 +944,7 @@ industry:
   hotmaps_locate_missing: false
   reference_year: 2019
   oil_refining_emissions: 0.013
-  temporal_electricity_industrial_load: true
+  temporal_electricity_industry_load: true
 
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#costs

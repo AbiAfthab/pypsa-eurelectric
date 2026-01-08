@@ -1161,15 +1161,15 @@ if (MOBILITY_PROFILES_DATASET := dataset_version("mobility_profiles"))["source"]
             copy2(input["pkw"], output["pkw"])
 
 
-if config["enable]["retrieve"]:
-   
+if config.get("enable", {}).get("retrieve", False):
+
     rule retrieve_ffe_load_profiles:
-         output:
-           "data/ffe_industry_load_profiles.json",
+        output:
+            "data/ffe_industry_load_profiles.json",
         log:
-           "logs/retrieve_ffe_load_profiles.log",
+            "logs/retrieve_ffe_load_profiles.log",
         resources:
-           mem_mb=1000,
+            mem_mb=1000,
         retries: 2
         run:
             data = requests.get(
@@ -1178,7 +1178,4 @@ if config["enable]["retrieve"]:
             ).json()
 
             with open(output[0], "w") as f:
-                  json.dump(data,f)
-
-
-   
+                json.dump(data, f)

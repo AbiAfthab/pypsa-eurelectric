@@ -47,11 +47,11 @@ logger = logging.getLogger(__name__)
 
 INDUSTRY_CATEGORY_TO_PROFILE = {
     "Electric arc": "Iron & steel industry",
-    "DRT + Electric arc": "Iron & steel industry",
+    "DRI + Electric arc": "Iron & steel industry",
     "Integrated steelworks": "Iron & steel industry",
     "HVC": "Non-specified (Industry)",
     "HVC (mechanical recycling)": "Non-specified (Industry)",
-    "HVC (chemical recylcing)": "Non-specified (Industry)",
+    "HVC (chemical recycling)": "Non-specified (Industry)",
     "Ammonia": "Non-specified (Industry)",
     "Chlorine": "Non-specified (Industry)",
     "Methanol": "Non-specified (Industry)",
@@ -126,9 +126,10 @@ def create_nodal_electricity_profiles(
 
     # ---- Vectorised combination of sector profiles per node ----
     # Extract electricity sector demands for all nodes at once:
-    #   index  -> industrial sectors
-    #   columns -> nodes
-    elec_demands = nodal_sector_df.loc["elec"]
+    # nodal_sector_df.loc["elec"] returns Series with MultiIndex (node, sector)
+    # Unstack to get DataFrame with index=sectors, columns=nodes
+    elec_demands_series = nodal_sector_df.loc["elec"]
+    elec_demands = elec_demands_series.unstack(level=0)  # index=sectors, columns=nodes
 
     # Map each sector to the corresponding FfE profile name
     sector_to_profile = pd.Series(INDUSTRY_CATEGORY_TO_PROFILE)
@@ -365,7 +366,7 @@ if __name__ == "__main__":
     )
 
     logger.info("Loading FfE industry load profiles...")
-    ffe_profiles = load_ffe_load_profiles(snakemake.input.fee_profiles)
+    ffe_profiles = load_ffe_load_profiles(snakemake.input.ffe_profiles)
 
 
     nodal_electricity_profiles = create_nodal_electricity_profiles(
@@ -374,6 +375,6 @@ if __name__ == "__main__":
 
     # Export hourly profiles
     fn_profiles = snakemake.output.industrial_electricity_demand_per_node_temporal
-    create_nodal_electricity_profiles.to_csv(fn_profiles, float_format="%. 2f")
+    nodal_electricity_profiles.to_csv(fn_profiles, float_format="%.2f")
     logger.info(f"Hourly electricity profiles saved to {fn_profiles}")
 

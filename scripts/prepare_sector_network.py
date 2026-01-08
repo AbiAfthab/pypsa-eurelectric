@@ -5042,10 +5042,10 @@ def add_industry(
         n.add(
             "Load",
             nodes,
-            suffix="industry electricity",
+            suffix=" industry electricity",
             bus=nodes,
             carrier="industry electricity",
-            p_set=industrial_demand.loc[nodes, "electricty"] / nhours,
+            p_set=industrial_demand.loc[nodes, "electricity"] / nhours,
         )
         
     n.add(
