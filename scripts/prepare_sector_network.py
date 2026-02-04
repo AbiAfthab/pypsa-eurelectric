@@ -1584,6 +1584,12 @@ def insert_electricity_distribution_grid(
     loads = n.loads.index[n.loads.carrier.str.contains("electric")]
     n.loads.loc[loads, "bus"] += " low voltage"
 
+    # Move industry DSR stores to low voltage buses (same buses as industry loads)
+    industry_dsr_stores = n.stores.index[n.stores.carrier == "industry dsr"]
+    if len(industry_dsr_stores) > 0:
+        n.stores.loc[industry_dsr_stores, "bus"] += " low voltage"
+        logger.info(f"Moved {len(industry_dsr_stores)} industry DSR stores to low voltage buses")
+
     bevs = n.links.index[n.links.carrier == "BEV charger"]
     n.links.loc[bevs, "bus0"] += " low voltage"
 
@@ -5048,7 +5054,108 @@ def add_industry(
             carrier="industry electricity",
             p_set=industrial_demand.loc[nodes, "electricity"] / nhours,
         )
-        
+
+    # Industry electricity DSR (Option B): one Store per FfE profile per node
+    # DSR config lives under main config industry.dsr; options["industry"] is sector_opts (bool)
+    industry_config = snakemake.config.get("industry", {})
+    industry_config = industry_config if isinstance(industry_config, dict) else {}
+    dsr_config = industry_config.get("dsr", {})
+    if (
+        use_temporal
+        and dsr_config.get("enable")
+        and getattr(
+            snakemake.input, "industrial_electricity_profiles_per_profile", None
+        )
+    ):
+        per_profile_path = snakemake.input.industrial_electricity_profiles_per_profile
+        path = (
+            per_profile_path[0]
+            if isinstance(per_profile_path, list) and len(per_profile_path) > 0
+            else per_profile_path
+        )
+        if path:
+            logger.info("Adding industry electricity DSR (per-profile Stores)")
+            per_profile_df = pd.read_csv(
+                path, index_col=0, parse_dates=True
+            ).reindex(n.snapshots)
+            # Columns are "node|profile"
+            node_profile = [c.split("|", 1) for c in per_profile_df.columns]
+            nodes_per_profile = {}
+            for n_, p_ in node_profile:
+                nodes_per_profile.setdefault(p_, []).append(n_)
+            flexibility_fraction = dsr_config.get("flexibility_fraction", {})
+            shift_hours = dsr_config.get("shift_hours", {})
+            restriction_value = float(dsr_config.get("restriction_value", 1.0))
+            # Optional DSR checkpoint profile (snapshots x profiles): 0 at checkpoint hours, else restriction_value
+            dsr_profile_df = None
+            dsr_profile_path = getattr(
+                snakemake.input, "industrial_dsr_profile", None
+            )
+            if dsr_profile_path:
+                dsr_path = (
+                    dsr_profile_path[0]
+                    if isinstance(dsr_profile_path, list)
+                    and len(dsr_profile_path) > 0
+                    else dsr_profile_path
+                )
+                if dsr_path:
+                    dsr_profile_df = pd.read_csv(
+                        dsr_path, index_col=0, parse_dates=True
+                    ).reindex(n.snapshots).ffill().bfill()
+            if "industry dsr" not in n.carriers.index:
+                n.add("Carrier", "industry dsr")
+            for profile, frac in flexibility_fraction.items():
+                if profile not in shift_hours or profile not in nodes_per_profile:
+                    continue
+                h = shift_hours[profile]
+                cols_profile = [
+                    c for c in per_profile_df.columns if c.split("|", 1)[1] == profile
+                ]
+                load_profile = per_profile_df[cols_profile]
+                P_flex = load_profile * frac
+                e_nom_per_col = P_flex.max() * h
+                # Column names are "node|profile"; index e_nom by node
+                e_nom_series = pd.Series(
+                    e_nom_per_col.values,
+                    index=[c.split("|", 1)[0] for c in cols_profile],
+                )
+                e_nom_series = e_nom_series[e_nom_series > 0]
+                if e_nom_series.empty:
+                    continue
+                store_names = [
+                    f"{node} industry dsr {profile}" for node in e_nom_series.index
+                ]
+                e_nom = e_nom_series.values
+                if dsr_profile_df is not None and profile in dsr_profile_df.columns:
+                    # Time-varying: 0 at checkpoint hours so store must settle; demand balanced per period
+                    profile_vals = (
+                        dsr_profile_df[profile].values * frac * restriction_value
+                    )
+                    e_max_pu = pd.DataFrame(
+                        index=n.snapshots,
+                        columns=store_names,
+                        data=profile_vals.reshape(-1, 1) * np.ones((len(n.snapshots), len(store_names))),
+                    )
+                    e_min_pu = -e_max_pu
+                else:
+                    e_max_pu = frac * restriction_value
+                    e_min_pu = -e_max_pu
+                # Stores will be moved to "low voltage" buses later by insert_electricity_distribution_grid
+                # So add them to main AC buses for now
+                n.add(
+                    "Store",
+                    store_names,
+                    bus=e_nom_series.index.tolist(),
+                    carrier="industry dsr",
+                    standing_loss=0.0,
+                    e_cyclic=True,
+                    e_initial=0.0,
+                    e_nom=e_nom,
+                    e_max_pu=e_max_pu,
+                    e_min_pu=e_min_pu,
+                )
+            logger.info("Industry DSR Stores added.")
+
     n.add(
         "Bus",
         spatial.co2.process_emissions,

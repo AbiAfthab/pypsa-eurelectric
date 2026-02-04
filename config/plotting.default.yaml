@@ -508,6 +508,7 @@ plotting:
     electric demand: '#110d63'
     electricity: '#110d63'
     industry electricity: '#2d2a66'
+    industry dsr: '#4a4570'
     industry new electricity: '#2d2a66'
     agriculture electricity: '#494778'
     # battery + EVs

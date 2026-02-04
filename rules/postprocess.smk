@@ -469,6 +469,65 @@ rule plot_balance_timeseries:
         "../scripts/plot_balance_timeseries.py"
 
 
+rule plot_industry_dsr_comparison:
+    params:
+        days=14,
+    input:
+        network=RESULTS
+        + "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.nc",
+    output:
+        plot=RESULTS
+        + "maps/static/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}-industry_dsr_comparison.pdf",
+    threads: 1
+    resources:
+        mem_mb=2000,
+    log:
+        RESULTS
+        + "logs/plot_industry_dsr_comparison/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.log",
+    script:
+        "../scripts/plot_industry_dsr_comparison.py"
+
+
+rule plot_industry_dsr_price_correlation:
+    params:
+        days=None,
+        bus_carrier="AC",
+    input:
+        network=RESULTS
+        + "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.nc",
+    output:
+        plot=RESULTS
+        + "maps/static/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}-industry_dsr_price_correlation.pdf",
+    threads: 1
+    resources:
+        mem_mb=2000,
+    log:
+        RESULTS
+        + "logs/plot_industry_dsr_price_correlation/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.log",
+    script:
+        "../scripts/plot_industry_dsr_price_correlation.py"
+
+
+rule plot_industry_load_price_correlation:
+    params:
+        days=None,
+        bus_carrier="AC",
+    input:
+        network=RESULTS
+        + "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.nc",
+    output:
+        plot=RESULTS
+        + "maps/static/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}-industry_load_price_correlation.pdf",
+    threads: 1
+    resources:
+        mem_mb=2000,
+    log:
+        RESULTS
+        + "logs/plot_industry_load_price_correlation/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.log",
+    script:
+        "../scripts/plot_industry_load_price_correlation.py"
+
+
 rule plot_heatmap_timeseries:
     params:
         plotting=config_provider("plotting"),

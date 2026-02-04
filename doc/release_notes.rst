@@ -135,6 +135,8 @@ Upcoming Release
 
 * Misc: Automatically update the DAGs shown in the documentation (https://github.com/PyPSA/pypsa-eur/pull/1880).
 
+* Add configurable **industry electricity demand-side response (DSR)** based on virtual ``Store`` components with time-varying energy bounds per FfE profile. New configuration keys under ``industry: dsr:`` allow setting flexibility fractions, shift hours, checkpoint hours (``restriction_time``) and a global ``restriction_value``; a dedicated build step (``build_industry_dsr_profile``) creates an hourly checkpoint profile that is applied in ``prepare_sector_network.py`` as time-varying ``e_max_pu``/``e_min_pu`` for industry DSR stores, with bus mapping aligned to low-voltage industry loads.
+
 PyPSA-Eur v2025.07.0 (11th July 2025)
 =====================================
 

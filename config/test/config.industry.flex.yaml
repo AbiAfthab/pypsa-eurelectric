@@ -34,7 +34,7 @@ foresight: overnight
 # Wildcard docs in https://pypsa-eur.readthedocs.io/en/latest/wildcards.html
 scenario:
   clusters:
-  - 10
+  - 5
   opts:
   - ''
   sector_opts:
@@ -44,10 +44,10 @@ scenario:
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#countries
 countries:
-- DE
-- NL
+# - DE
+# - NL
 - BE
-- FR
+# - FR
 # - AL
 # - AT
 # - BA
@@ -946,6 +946,41 @@ industry:
   oil_refining_emissions: 0.013
   temporal_electricity_industry_load: true
 
+  # Industry electricity DSR: virtual storage for load shifting (mirrors residential_heat.dsm).
+  dsr:
+    enable: true
+    flexibility_fraction:
+      "Iron & steel industry": 0.15
+      "Non-metallic Minerals": 0.20
+      "Paper, Pulp and Print": 0.10
+      "Food and Tobacco": 0.10
+      "Non-specified (Industry)": 0.10
+      "Textile and Leather": 0.10
+      "Wood and Wood Products": 0.10
+      "Transport Equipment": 0.10
+      "Machinery": 0.10
+    shift_hours:
+      "Iron & steel industry": 4
+      "Non-metallic Minerals": 2
+      "Paper, Pulp and Print": 8
+      "Food and Tobacco": 4
+      "Non-specified (Industry)": 4
+      "Textile and Leather": 4
+      "Wood and Wood Products": 4
+      "Transport Equipment": 4
+      "Machinery": 4
+    restriction_time:
+      "Iron & steel industry": [6, 18]
+      "Non-metallic Minerals": [0, 12]
+      "Paper, Pulp and Print": [6, 22]
+      "Food and Tobacco": [8, 20]
+      "Non-specified (Industry)": [6, 18]
+      "Textile and Leather": [8, 20]
+      "Wood and Wood Products": [8, 20]
+      "Transport Equipment": [6, 18]
+      "Machinery": [6, 18]
+    restriction_value: 1.0
+
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#costs
 costs:
@@ -996,7 +1031,7 @@ clustering:
       ramp_limit_down: max
   temporal:
     resolution_elec: false
-    resolution_sector: false
+    resolution_sector: 6h
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#adjustments
 adjustments:
@@ -1171,6 +1206,7 @@ solving:
     transmission_losses: 2
     linearized_unit_commitment: true
     horizon: 365
+    nhours: 168  # Limit to first 168 hours (1 week) for testing
     post_discretization:
       enable: false
       line_unit_size: 1700
@@ -1201,8 +1237,8 @@ solving:
     SAFE: false
 
   solver:
-    name: gurobi
-    options: gurobi-default
+    name: highs
+    options: highs-default
 
   solver_options:
     highs-default:
