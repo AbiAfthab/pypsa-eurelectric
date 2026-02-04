@@ -199,7 +199,59 @@ def create_nodal_electricity_profiles(
     logger.info("Hourly profiles verified to match annual demand")
 
     return nodal_profiles
-    
+
+
+def create_nodal_electricity_profiles_per_profile(
+    nodal_df, nodal_sector_df, snapshots, ffe_profiles, node_to_country
+):
+    """
+    Create hourly electricity demand per FfE profile per node (MW).
+
+    Returns a DataFrame with MultiIndex columns (node, profile) and index = snapshots.
+    Used for industry DSR (Option B): one Store per profile per node.
+    """
+    elec_demands_series = nodal_sector_df.loc["elec"]
+    elec_demands = elec_demands_series.unstack(level=0)
+
+    sector_to_profile = pd.Series(INDUSTRY_CATEGORY_TO_PROFILE)
+    sector_to_profile = sector_to_profile.reindex(elec_demands.index)
+    if sector_to_profile.isna().any():
+        missing = sector_to_profile[sector_to_profile.isna()].index.tolist()
+        raise KeyError(
+            f"Missing FfE profile mapping for industrial sectors: {missing}"
+        )
+
+    profile_demands = elec_demands.groupby(sector_to_profile).sum()
+    missing_profiles = set(profile_demands.index) - set(ffe_profiles.columns)
+    if missing_profiles:
+        raise ValueError(
+            f"Profiles {missing_profiles} from INDUSTRY_CATEGORY_TO_PROFILE not in FfE data"
+        )
+
+    profiles = profile_demands.index.tolist()
+    nodes = nodal_df.index.tolist()
+
+    # Build (snapshots x (node, profile)) in MW
+    data = {}
+    for node in nodes:
+        for profile in profiles:
+            annual_twh = profile_demands.loc[profile, node]
+            if annual_twh <= 0:
+                # Zero demand: skip map_profile_to_snapshots (avoids 0/0 -> NaN in scaling)
+                data[(node, profile)] = pd.Series(0.0, index=snapshots)
+            else:
+                ref_profile = ffe_profiles[profile] * annual_twh
+                mapped = map_profile_to_snapshots(
+                    ref_profile,
+                    snapshots,
+                    node_country=node_to_country[node],
+                    tol=0.02,
+                )
+                data[(node, profile)] = mapped * 1e6
+    per_profile = pd.DataFrame(data, index=snapshots)
+    per_profile.columns.names = ["node", "profile"]
+    return per_profile
+
 
 def map_profile_to_snapshots(reference_profile, snapshots, node_country='DE', tol=0.02):
     """
@@ -289,7 +341,11 @@ def map_profile_to_snapshots(reference_profile, snapshots, node_country='DE', to
         )
     
     # STEP 8: Scale to preserve energy (with tolerance check)
-    scaling_factor = original_energy / mapped.sum()
+    mapped_sum = mapped.sum()
+    if original_energy == 0 or np.isnan(original_energy) or mapped_sum == 0 or np.isnan(mapped_sum):
+        # Avoid 0/0 or nan/... leading to NaN scaling_factor and assertion failure
+        return pd.Series(0.0, index=snapshots)
+    scaling_factor = original_energy / mapped_sum
     assert abs(scaling_factor - 1.0) < tol, (
         f"Energy deviation after mapping: {(scaling_factor - 1.0) * 100:.2f}%"
     )
@@ -373,8 +429,18 @@ if __name__ == "__main__":
         nodal_df, nodal_sector_df, snapshots, ffe_profiles
     )
 
-    # Export hourly profiles
+    # Export hourly profiles (total per node)
     fn_profiles = snakemake.output.industrial_electricity_demand_per_node_temporal
     nodal_electricity_profiles.to_csv(fn_profiles, float_format="%.2f")
     logger.info(f"Hourly electricity profiles saved to {fn_profiles}")
+
+    # Export hourly profiles per FfE profile per node (for industry DSR Option B)
+    per_profile = create_nodal_electricity_profiles_per_profile(
+        nodal_df, nodal_sector_df, snapshots, ffe_profiles, node_to_country
+    )
+    fn_per_profile = snakemake.output.industrial_electricity_demand_per_profile_temporal
+    per_profile_flat = per_profile.copy()
+    per_profile_flat.columns = [f"{n}|{p}" for n, p in per_profile.columns]
+    per_profile_flat.to_csv(fn_per_profile, float_format="%.2f")
+    logger.info(f"Hourly electricity profiles per profile saved to {fn_per_profile}")
 

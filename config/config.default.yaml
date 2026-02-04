@@ -940,6 +940,48 @@ industry:
   reference_year: 2019
   oil_refining_emissions: 0.013
 
+  # Industry electricity demand-side response (DSR): virtual storage for load shifting.
+  # Config keys use FfE profile names (e.g. "Iron & steel industry"), not PyPSA industry categories
+  # (e.g. Electric arc, Cement). See INDUSTRY_CATEGORY_TO_PROFILE in build_industrial_energy_demand_per_node.py.
+  dsr:
+    enable: false
+    # Fraction of load that can be shifted (0..1) per FfE profile.
+    flexibility_fraction:
+      "Iron & steel industry": 0.15
+      "Non-metallic Minerals": 0.20
+      "Paper, Pulp and Print": 0.10
+      "Food and Tobacco": 0.10
+      "Non-specified (Industry)": 0.10
+      "Textile and Leather": 0.10
+      "Wood and Wood Products": 0.10
+      "Transport Equipment": 0.10
+      "Machinery": 0.10
+    # Maximum shift duration in hours per FfE profile (e.g. cement/NMM: 2h, pulp: 8h).
+    shift_hours:
+      "Iron & steel industry": 4
+      "Non-metallic Minerals": 2
+      "Paper, Pulp and Print": 8
+      "Food and Tobacco": 4
+      "Non-specified (Industry)": 4
+      "Textile and Leather": 4
+      "Wood and Wood Products": 4
+      "Transport Equipment": 4
+      "Machinery": 4
+    # Checkpoint hours (0-23) per FfE profile at which the DSR store must be empty; demand is balanced per period.
+    # Different sectors have different operating times (e.g. 24/7 vs day shift).
+    restriction_time:
+      "Iron & steel industry": [6, 18]
+      "Non-metallic Minerals": [0, 12]
+      "Paper, Pulp and Print": [6, 22]
+      "Food and Tobacco": [8, 20]
+      "Non-specified (Industry)": [6, 18]
+      "Textile and Leather": [8, 20]
+      "Wood and Wood Products": [8, 20]
+      "Transport Equipment": [6, 18]
+      "Machinery": [6, 18]
+    # Scale factor (0..1) for DSR profile; 1.0 = full flexibility between checkpoints.
+    restriction_value: 1.0
+
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#costs
 costs:
