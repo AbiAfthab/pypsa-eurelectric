@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: Contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# Baseline test config - same clusters and time period as DSR test, but no DSR modifications
+# This helps determine if price issues are pre-existing
+
+# Include default configs
+include:
+  - config/config.default.yaml
+  - config/plotting.default.yaml
+
+run:
+  prefix: ""
+  name: "Test_2030_baseline"
+  scenarios:
+    enable: false
+    file: config/scenarios.yaml
+  disable_progressbar: false
+  shared_resources:
+    policy: false
+    exclude: []
+  use_shadow_directory: false
+
+foresight: overnight
+
+scenario:
+  clusters:
+  - 5
+  opts:
+  - ''
+  sector_opts:
+  - ''
+  planning_horizons:
+  - 2030
+
+countries:
+- BE
+
+# CO2 budget - same as DSR config
+co2_budget:
+  2030: 0.450 # 55% reduction by 2030 (Ff55)
+
+snapshots:
+  start: "2013-01-01"
+  end: "2014-01-01"  # Full year (required for profile building)
+  inclusive: 'left'
+
+solving:
+  options:
+    nhours: 168  # Limit solving to first week (168 hours) for testing
+
+clustering:
+  temporal:
+    resolution_sector: 6h
+
+# Electricity settings - ensure generators can be extended
+electricity:
+  extendable_carriers:
+    Generator: [solar, solar-hsat, onwind, offwind-ac, offwind-dc, offwind-float, OCGT, CCGT]
+    StorageUnit: [] # battery, H2
+    Store: [battery, H2]
+    Link: [] # H2 pipeline
+  renewable_carriers: [solar, solar-hsat, onwind, offwind-ac, offwind-dc, offwind-float, hydro]
+
+# Industry settings - match DSR config structure
+industry:
+  temporal_electricity_industry_load: true
+  dsr:
+    enable: false  # DSR explicitly disabled

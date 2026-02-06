@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: Contributors to PyPSA-Eur <https://github.com/pypsa/pypsa-eur>
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# Test config WITHOUT industry DSR to check if high costs/bounds are pre-existing
+# Based on config.industry.flex.yaml but with industry.dsr.enable: false
+
+# Copy all settings from config.industry.flex.yaml but override DSR
+include:
+  - config/test/config.industry.flex.yaml
+
+# Override: Disable industry DSR
+industry:
+  dsr:
+    enable: false  # <-- DSR DISABLED for baseline comparison
