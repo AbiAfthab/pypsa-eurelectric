@@ -1138,6 +1138,7 @@ rule build_industrial_energy_demand_per_node:
 rule build_industry_dsr_profile:
     params:
         restriction_time=config_provider("industry", "dsr", "restriction_time"),
+        technology_breakdown=config_provider("industry", "dsr", "technology_breakdown", default={}),
     input:
         industrial_electricity_demand_per_profile_temporal=resources(
             "industrial_electricity_demand_per_profile_temporal_base_s_{clusters}_{planning_horizons}.csv"

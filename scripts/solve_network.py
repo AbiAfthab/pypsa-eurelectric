@@ -1162,6 +1162,320 @@ def add_co2_atmosphere_constraint(n, snapshots):
             n.model.add_constraints(lhs <= rhs, name=f"GlobalConstraint-{name}")
 
 
+def add_dri_h2_coupling_constraint(n: pypsa.Network, snapshots: pd.DatetimeIndex) -> None:
+    """
+    Add coupling constraint between DRI DSR flexibility and H2 storage capacity.
+    
+    H2-DRI-EAF flexibility requires H2 storage to enable load shifting. This constraint
+    limits DRI load shifting based on available H2 storage capacity.
+    
+    Constraint: |DRI_DSR_dispatch| ≤ H2_storage_capacity / H2_per_DRI_ratio
+    
+    Parameters
+    ----------
+    n : pypsa.Network
+        The PyPSA network instance
+    snapshots : pd.DatetimeIndex
+        Simulation timesteps
+    """
+    # Check if industry DSR is enabled
+    industry_config = n.config.get("industry", {})
+    dsr_config = industry_config.get("dsr", {})
+    if not dsr_config.get("enable", False):
+        return
+    
+    # Get H2/DRI ratio from config (MWh_H2 per ton steel, or MWh_H2 per MWh_DRI)
+    # H2_DRI: 1.7 is MWh_H2 per ton steel
+    # We need to convert to MWh_H2 per MWh_DRI electricity
+    # elec_DRI: 0.322 MWh_el per ton steel
+    # So: MWh_H2 per MWh_el = H2_DRI / elec_DRI = 1.7 / 0.322 ≈ 5.28
+    h2_dri_ratio = industry_config.get("H2_DRI", 1.7)
+    elec_dri_ratio = industry_config.get("elec_DRI", 0.322)
+    
+    if elec_dri_ratio == 0:
+        logger.warning(
+            "elec_DRI is 0, cannot calculate H2_per_DRI_electricity_ratio for coupling constraint. "
+            "Skipping H2-DRI coupling constraint. DRI flexibility may be overestimated."
+        )
+        return
+    
+    h2_per_dri_elec = h2_dri_ratio / elec_dri_ratio  # MWh_H2 per MWh_DRI_electricity
+    
+    # Find DRI DSR stores (those with "H2-DRI-EAF" in the name)
+    industry_dsr_stores = n.stores[n.stores.carrier == "industry dsr"]
+    dri_stores = industry_dsr_stores[industry_dsr_stores.index.str.contains("H2-DRI-EAF", case=False, na=False)]
+    
+    if dri_stores.empty:
+        return  # No DRI stores, nothing to constrain
+    
+    # Find H2 storage stores
+    h2_stores = n.stores[n.stores.carrier == "H2 Store"]
+    
+    if h2_stores.empty:
+        logger.warning("H2-DRI-EAF DSR stores found but no H2 storage available. DRI flexibility may be overestimated.")
+        return
+    
+    # Get the model variables (only if model exists)
+    if not hasattr(n, "model") or n.model is None:
+        return
+    
+    # Create mapping: DRI store bus -> H2 store
+    # DRI stores are on "low voltage" buses, need to find corresponding H2 bus
+    dri_store_to_h2_store = {}
+    
+    for dri_store_name in dri_stores.index:
+        dri_bus = n.stores.loc[dri_store_name, "bus"]
+        # Extract node name from bus (e.g., "BE0 0 low voltage" -> "BE0 0")
+        node_name = dri_bus.replace(" low voltage", "").replace(" H2", "")
+        
+        # Find H2 store at the same node
+        h2_bus = f"{node_name} H2"
+        h2_store_at_node = h2_stores[h2_stores.bus == h2_bus]
+        
+        if not h2_store_at_node.empty:
+            # Use the first H2 store at this node (there should typically be one)
+            h2_store_name = h2_store_at_node.index[0]
+            dri_store_to_h2_store[dri_store_name] = h2_store_name
+        else:
+            logger.debug(f"No H2 storage found for DRI store {dri_store_name} at bus {dri_bus}")
+    
+    if not dri_store_to_h2_store:
+        logger.warning("No H2 storage found for any DRI DSR stores. DRI flexibility may be overestimated.")
+        return
+    
+    # Add constraints for each DRI store
+    store_p = n.model["Store-p"]  # Store dispatch (power)
+    
+    constraints_added = 0
+    for dri_store_name, h2_store_name in dri_store_to_h2_store.items():
+        # Get H2 storage capacity (nominal energy capacity)
+        h2_store_e_nom = n.stores.loc[h2_store_name, "e_nom"]
+        h2_store_extendable = n.stores.loc[h2_store_name, "e_nom_extendable"]
+        
+        if h2_store_extendable:
+            # For extendable stores, use the model variable
+            # This allows the optimizer to build H2 storage to enable DRI flexibility
+            h2_store_e_nom_var = n.model["Store-e_nom"].loc[h2_store_name]
+            # Constraint: |DRI dispatch| * H2_per_DRI ≤ H2_storage_capacity
+            # This means: max_dri_shift = H2_storage_capacity / H2_per_DRI
+            max_dri_shift = h2_store_e_nom_var / h2_per_dri_elec
+        elif pd.isna(h2_store_e_nom) or h2_store_e_nom == 0:
+            logger.debug(f"H2 store {h2_store_name} has no capacity, skipping constraint for {dri_store_name}")
+            continue
+        else:
+            # For fixed capacity, use the nominal value
+            max_dri_shift = h2_store_e_nom / h2_per_dri_elec
+        
+        # Constraint: |DRI dispatch| ≤ max_dri_shift
+        # This limits both positive (charge) and negative (discharge) dispatch
+        dri_dispatch = store_p.loc[:, dri_store_name]
+        
+        # Add upper bound: DRI dispatch ≤ max_dri_shift
+        n.model.add_constraints(
+            dri_dispatch <= max_dri_shift,
+            name=f"DRI_H2_coupling_upper_{dri_store_name}"
+        )
+        
+        # Add lower bound: DRI dispatch ≥ -max_dri_shift
+        n.model.add_constraints(
+            dri_dispatch >= -max_dri_shift,
+            name=f"DRI_H2_coupling_lower_{dri_store_name}"
+        )
+        
+        constraints_added += 1
+    
+    if constraints_added > 0:
+        logger.info(f"Added H2 storage coupling constraints for {constraints_added} DRI DSR stores (H2/DRI ratio: {h2_per_dri_elec:.2f} MWh_H2/MWh_el)")
+
+
+def add_dsr_link_store_coupling_constraint(n: pypsa.Network, snapshots: pd.DatetimeIndex) -> None:
+    """
+    Add constraint coupling DSR Links to Store dispatch.
+    
+    With the flexibility bus architecture:
+    - Store on flexibility bus
+    - Charge link: load bus -> flexibility bus (positive flow = charging)
+    - Discharge link: flexibility bus -> load bus (positive flow = discharging)
+    
+    Constraint: store_p = charge_link - discharge_link
+    This ensures the store dispatch matches the link flows.
+    
+    Parameters
+    ----------
+    n : pypsa.Network
+        The PyPSA network instance
+    snapshots : pd.DatetimeIndex
+        Simulation timesteps
+    """
+    # Check if industry DSR is enabled
+    industry_config = n.config.get("industry", {})
+    dsr_config = industry_config.get("dsr", {})
+    if not dsr_config.get("enable", False):
+        return
+    
+    # Find DSR stores
+    industry_dsr_stores = n.stores.index[n.stores.carrier == "industry dsr"]
+    if industry_dsr_stores.empty:
+        return
+    
+    # Find corresponding charge and discharge links
+    charge_links = n.links.index[n.links.carrier == "industry dsr charge"]
+    discharge_links = n.links.index[n.links.carrier == "industry dsr discharge"]
+    
+    if charge_links.empty or discharge_links.empty:
+        logger.warning("DSR stores found but charge/discharge links not found. Store-link coupling constraint skipped.")
+        return
+    
+    # Get model variables
+    if not hasattr(n, "model") or n.model is None:
+        return
+    
+    store_p = n.model["Store-p"]
+    link_p = n.model["Link-p"]
+    
+    # Match stores to links by name
+    # Store name: "BE0 0 industry dsr Iron & steel industry Scrap-EAF"
+    # Charge link: "BE0 0 industry dsr Iron & steel industry Scrap-EAF charge"
+    # Discharge link: "BE0 0 industry dsr Iron & steel industry Scrap-EAF discharge"
+    
+    constraints_added = 0
+    for store_name in industry_dsr_stores:
+        charge_link_name = f"{store_name} charge"
+        discharge_link_name = f"{store_name} discharge"
+        
+        if charge_link_name not in charge_links or discharge_link_name not in discharge_links:
+            logger.debug(f"Links not found for store {store_name}, skipping coupling constraint")
+            continue
+        
+        # Constraint: store_p = charge_link - discharge_link
+        # This means:
+        # - When charging: charge_link > 0, discharge_link = 0, store_p > 0
+        # - When discharging: charge_link = 0, discharge_link > 0, store_p < 0
+        store_dispatch = store_p.loc[:, store_name]
+        charge_flow = link_p.loc[:, charge_link_name]
+        discharge_flow = link_p.loc[:, discharge_link_name]
+        
+        n.model.add_constraints(
+            store_dispatch == charge_flow - discharge_flow,
+            name=f"DSR_link_store_coupling_{store_name}"
+        )
+        constraints_added += 1
+    
+    if constraints_added > 0:
+        logger.info(f"Added store-link coupling constraints for {constraints_added} DSR stores")
+
+
+def add_dsr_ramp_constraints(n: pypsa.Network, snapshots: pd.DatetimeIndex, dsr_config: dict) -> None:
+    """
+    Add ramp rate constraints for DSR Links to prevent rapid cycling.
+    
+    Limits the change in link dispatch per hour to prevent unrealistic
+    rapid charge/discharge switching.
+    
+    Parameters
+    ----------
+    n : pypsa.Network
+        The PyPSA network instance
+    snapshots : pd.DatetimeIndex
+        Simulation timesteps
+    dsr_config : dict
+        Industry DSR configuration
+    """
+    # Get ramp rate parameters from config (default: 0.5 = 50% of p_nom per hour)
+    ramp_rate_config = dsr_config.get("ramp_rate", {})
+    default_ramp_rate = ramp_rate_config.get("default", 0.5)  # 50% per hour
+    
+    # Find DSR links
+    charge_links = n.links.index[n.links.carrier == "industry dsr charge"]
+    discharge_links = n.links.index[n.links.carrier == "industry dsr discharge"]
+    
+    if charge_links.empty and discharge_links.empty:
+        return
+    
+    # Get model variables
+    if not hasattr(n, "model") or n.model is None:
+        return
+    
+    link_p = n.model["Link-p"]
+    
+    constraints_added = 0
+    
+    # Add ramp constraints for charge links
+    for link_name in charge_links:
+        # Get technology-specific ramp rate if available
+        # Link name: "BE0 0 industry dsr Iron & steel industry Scrap-EAF charge"
+        # Extract technology key: "Iron & steel industry|Scrap-EAF"
+        store_name = link_name.replace(" charge", "")
+        parts = store_name.split(" industry dsr ")
+        if len(parts) == 2:
+            profile_tech = parts[1]
+            if " " in profile_tech:
+                profile, tech = profile_tech.rsplit(" ", 1)
+                tech_key = f"{profile}|{tech}"
+                ramp_rate = ramp_rate_config.get(tech_key, default_ramp_rate)
+            else:
+                ramp_rate = default_ramp_rate
+        else:
+            ramp_rate = default_ramp_rate
+        
+        # Get link capacity
+        p_nom = n.links.loc[link_name, "p_nom"]
+        max_ramp = p_nom * ramp_rate
+        
+        link_dispatch = link_p.loc[:, link_name]
+        
+        # Ramp up: link[t] - link[t-1] <= max_ramp
+        # Ramp down: link[t] - link[t-1] >= -max_ramp
+        for t in range(1, len(snapshots)):
+            n.model.add_constraints(
+                link_dispatch.loc[snapshots[t]] - link_dispatch.loc[snapshots[t-1]] <= max_ramp,
+                name=f"DSR_charge_ramp_up_{link_name}_{t}"
+            )
+            n.model.add_constraints(
+                link_dispatch.loc[snapshots[t]] - link_dispatch.loc[snapshots[t-1]] >= -max_ramp,
+                name=f"DSR_charge_ramp_down_{link_name}_{t}"
+            )
+        constraints_added += 2 * (len(snapshots) - 1)
+    
+    # Add ramp constraints for discharge links
+    for link_name in discharge_links:
+        # Get technology-specific ramp rate if available
+        store_name = link_name.replace(" discharge", "")
+        parts = store_name.split(" industry dsr ")
+        if len(parts) == 2:
+            profile_tech = parts[1]
+            if " " in profile_tech:
+                profile, tech = profile_tech.rsplit(" ", 1)
+                tech_key = f"{profile}|{tech}"
+                ramp_rate = ramp_rate_config.get(tech_key, default_ramp_rate)
+            else:
+                ramp_rate = default_ramp_rate
+        else:
+            ramp_rate = default_ramp_rate
+        
+        # Get link capacity
+        p_nom = n.links.loc[link_name, "p_nom"]
+        max_ramp = p_nom * ramp_rate
+        
+        link_dispatch = link_p.loc[:, link_name]
+        
+        # Ramp up: link[t] - link[t-1] <= max_ramp
+        # Ramp down: link[t] - link[t-1] >= -max_ramp
+        for t in range(1, len(snapshots)):
+            n.model.add_constraints(
+                link_dispatch.loc[snapshots[t]] - link_dispatch.loc[snapshots[t-1]] <= max_ramp,
+                name=f"DSR_discharge_ramp_up_{link_name}_{t}"
+            )
+            n.model.add_constraints(
+                link_dispatch.loc[snapshots[t]] - link_dispatch.loc[snapshots[t-1]] >= -max_ramp,
+                name=f"DSR_discharge_ramp_down_{link_name}_{t}"
+            )
+        constraints_added += 2 * (len(snapshots) - 1)
+    
+    if constraints_added > 0:
+        logger.info(f"Added ramp rate constraints for {len(charge_links) + len(discharge_links)} DSR links ({constraints_added} total constraints)")
+
+
 def extra_functionality(
     n: pypsa.Network, snapshots: pd.DatetimeIndex, planning_horizons: str | None = None
 ) -> None:
@@ -1207,6 +1521,14 @@ def extra_functionality(
     ):
         add_solar_potential_constraints(n, config)
 
+    # Add DRI-H2 coupling constraint if industry DSR is enabled
+    industry_config = n.config.get("industry", {})
+    dsr_config = industry_config.get("dsr", {})
+    if dsr_config.get("enable", False):
+        add_dri_h2_coupling_constraint(n, snapshots)
+        add_dsr_link_store_coupling_constraint(n, snapshots)
+        add_dsr_ramp_constraints(n, snapshots, dsr_config)
+    
     if n.config.get("sector", {}).get("tes", False):
         if n.buses.index.str.contains(
             r"urban central heat|urban decentral heat|rural heat",

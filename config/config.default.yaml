@@ -981,6 +981,11 @@ industry:
       "Machinery": [6, 18]
     # Scale factor (0..1) for DSR profile; 1.0 = full flexibility between checkpoints.
     restriction_value: 1.0
+    # Ramp rate constraints to prevent rapid cycling (fraction of p_nom per hour)
+    # Default: 0.5 means link dispatch can change by max 50% of capacity per hour
+    # Technology-specific values override the default (format: "profile|technology": value)
+    ramp_rate:
+      default: 0.5  # 50% per hour (prevents rapid charge/discharge switching)
 
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#costs
