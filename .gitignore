@@ -76,6 +76,14 @@ merger-todos.md
 
 *.html
 
+config/resources/
+
+*.tif
+
+*.tiff
+
+
+
 # private dev folder
 dev/*
 
