@@ -214,6 +214,7 @@ solving:
     options: gurobi-default
   mem_mb: 128000
   runtime: 48h
+  assign_all_duals: true
 
 plotting:
   map:
