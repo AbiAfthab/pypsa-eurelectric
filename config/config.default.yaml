@@ -30,6 +30,7 @@ run:
     policy: false
     exclude: []
   use_shadow_directory: false
+  shared_cutouts: false
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#foresight
 foresight: overnight
@@ -91,6 +92,7 @@ snapshots:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#enable
 enable:
   drop_leap_day: true
+  retrieve: true
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#co2_budget
 co2_budget:
@@ -977,6 +979,7 @@ sector:
       methanol: 121
       gas: 122
       oil: 125
+  land_transport_passenger_km_scaling: {}
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#industry
 industry:
@@ -1063,6 +1066,20 @@ industry:
   hotmaps_locate_missing: false
   reference_year: 2023
   oil_refining_emissions: 0.013
+  dsr:
+    enable: false
+    store_capital_cost: 5.0
+    link_capital_cost: 0.0
+    flexibility_fraction: {}
+    shift_hours: {}
+    restriction_time: {}
+    restriction_value: 1.0
+    technology_breakdown: {}
+    negative_only: {}
+    min_load: {}
+    ramp_rate:
+      default: 1.0
+  temporal_electricity_industry_load: false
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#costs
 costs:
@@ -1175,6 +1192,7 @@ solving:
     store_model: false
     model_kwargs:
       solver_dir: ""
+    assign_all_duals: false
   agg_p_nom_limits:
     agg_offwind: false
     agg_solar: false

@@ -57,6 +57,16 @@ path = [
 SPDX-FileCopyrightText = "The PyPSA-Eur Authors"
 SPDX-License-Identifier = "CC0-1.0"
 
+# Eurelectric-specific data files
+[[annotations]]
+path = [
+    "data/agg_p_nom_real_0.1_res_cap.csv",
+    "data/agg_p_nom_real_0.3_res_cap.csv",
+    "data/agg_p_nom_solar_cap.csv",
+]
+SPDX-FileCopyrightText = "Eurelectric"
+SPDX-License-Identifier = "CC-BY-4.0"
+
 [[annotations]]
 path = [
     "data/retro/comparative_level_investments.csv",

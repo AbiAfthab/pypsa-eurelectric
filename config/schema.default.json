@@ -2346,11 +2346,16 @@
       }
     },
     "EnableConfig": {
-      "description": "Configuration for `enable` settings.",
+      "description": "Configuration for `enable` settings with Eurelectric extensions.",
       "properties": {
         "drop_leap_day": {
           "default": true,
           "description": "Switch to drop February 29 from all time-dependent data in leap years.",
+          "type": "boolean"
+        },
+        "retrieve": {
+          "default": true,
+          "description": "Enable data retrieval rules. Set to false to skip downloading external data.",
           "type": "boolean"
         }
       }
@@ -2423,7 +2428,7 @@
       "type": "string"
     },
     "IndustryConfig": {
-      "description": "Configuration for `industry` settings.",
+      "description": "Configuration for `industry` settings with Eurelectric DSR extensions.",
       "properties": {
         "St_primary_fraction": {
           "additionalProperties": {
@@ -2624,6 +2629,89 @@
           "default": 0.013,
           "description": "The emissions from oil fuel processing (e.g. oil in petrochemical refinieries). The default value of 0.013 tCO2/MWh is based on DE statistics for 2019; the EU value is very similar.",
           "type": "number"
+        },
+        "dsr": {
+          "description": "Configuration for `industry.dsr` (demand-side response) settings.\n\nIndustry DSR models the flexibility potential of industrial electricity loads,\nallowing load shifting within configurable time windows. Each technology or\nprofile can have its own flexibility parameters.",
+          "properties": {
+            "enable": {
+              "default": false,
+              "description": "Enable industry electricity demand-side response modeling. When enabled, adds flexibility stores and links for each configured technology/profile combination.",
+              "type": "boolean"
+            },
+            "store_capital_cost": {
+              "default": 5.0,
+              "description": "Capital cost for DSR flexibility stores representing the cost of providing flexibility capacity (EUR/MWh/year). Higher values reduce DSR utilization.",
+              "type": "number"
+            },
+            "link_capital_cost": {
+              "default": 0.0,
+              "description": "Capital cost for DSR links connecting loads to flexibility stores (EUR/MW/year). Usually set to 0 as the flexibility cost is captured in store_capital_cost.",
+              "type": "number"
+            },
+            "flexibility_fraction": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "description": "Fraction of load that can participate in DSR, keyed by 'profile|technology' (e.g., 'Iron & steel industry|Scrap-EAF': 0.85). Values should be between 0 and 1. Technologies not listed are assumed to have zero flexibility.",
+              "type": "object"
+            },
+            "shift_hours": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "description": "Maximum hours that load can be shifted forward or backward, keyed by 'profile|technology' (e.g., 'Iron & steel industry|Scrap-EAF': 2). Determines the energy capacity of the flexibility store relative to the load.",
+              "type": "object"
+            },
+            "restriction_time": {
+              "additionalProperties": {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              "description": "Checkpoint hours (0-23) at which DSR stores must return to baseline state of charge, keyed by 'profile|technology'. E.g., [6, 18] creates 12-hour periods with balance requirements at 6am and 6pm. Default [] means daily balance (at midnight).",
+              "type": "object"
+            },
+            "restriction_value": {
+              "default": 1.0,
+              "description": "Maximum state of charge as fraction for DSR flexibility storage (0 to 1). Set to 1.0 to allow full utilization of shift_hours capacity.",
+              "type": "number"
+            },
+            "technology_breakdown": {
+              "additionalProperties": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "description": "Technology breakdown within each FfE profile. Maps profile name to dictionary of {technology: share}. Shares must sum to 1.0 within each profile. Use 'auto' for automatic calculation from production data.",
+              "type": "object"
+            },
+            "negative_only": {
+              "additionalProperties": {
+                "type": "boolean"
+              },
+              "description": "Technologies that can only reduce load (not increase), keyed by 'profile|technology'. Set to true for processes like chlor-alkali where ramping up is not feasible. Default false = bidirectional flexibility.",
+              "type": "object"
+            },
+            "min_load": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "description": "Minimum load constraint as fraction of baseline load (hard operational limit), keyed by 'profile|technology'. E.g., 0.70 means load can only drop to 70% of baseline. Used for processes with minimum operating requirements.",
+              "type": "object"
+            },
+            "ramp_rate": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "description": "Ramp rate limits per hour as fraction of capacity, keyed by 'profile|technology' or 'default'. E.g., {'default': 0.5} = 50%/hour max ramp. Use 1.0 for no ramp constraint.",
+              "type": "object"
+            }
+          }
+        },
+        "temporal_electricity_industry_load": {
+          "default": false,
+          "description": "Use temporally resolved electricity industry load profiles from FfE data instead of flat annual profiles.",
+          "type": "boolean"
         }
       }
     },
@@ -3984,7 +4072,7 @@
       }
     },
     "RunConfig": {
-      "description": "Configuration for top level `run` settings.",
+      "description": "Configuration for `run` settings with Eurelectric extensions.",
       "properties": {
         "prefix": {
           "default": "",
@@ -4067,6 +4155,11 @@
             true
           ],
           "type": "boolean"
+        },
+        "shared_cutouts": {
+          "default": false,
+          "description": "Share atlite cutouts between runs to save disk space and computation time.",
+          "type": "boolean"
         }
       }
     },
@@ -4115,7 +4208,7 @@
       }
     },
     "SectorConfig": {
-      "description": "Configuration for `sector` settings.",
+      "description": "Configuration for `sector` settings with Eurelectric transport extensions.",
       "properties": {
         "transport": {
           "default": true,
@@ -5105,6 +5198,13 @@
               "type": "object"
             }
           }
+        },
+        "land_transport_passenger_km_scaling": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed scaling factors for land transport passenger-km demand. Maps planning horizon year to scaling factor (e.g., {2030: 1.03, 2040: 1.06}).",
+          "type": "object"
         }
       }
     },
@@ -5195,10 +5295,10 @@
       }
     },
     "SolvingConfig": {
-      "description": "Configuration for `solving` settings.",
+      "description": "Configuration for `solving` settings with Eurelectric extensions.",
       "properties": {
         "options": {
-          "description": "Configuration for `solving.options` settings.",
+          "description": "Configuration for `solving.options` with Eurelectric extensions.",
           "properties": {
             "clip_p_max_pu": {
               "default": 0.01,
@@ -5407,11 +5507,16 @@
                   "type": "string"
                 }
               }
+            },
+            "assign_all_duals": {
+              "default": false,
+              "description": "Assign dual values for all constraints (not just binding ones). Useful for marginal price analysis.",
+              "type": "boolean"
             }
           }
         },
         "agg_p_nom_limits": {
-          "description": "Configuration for `solving.agg_p_nom_limits` settings.",
+          "description": "Configuration for `solving.agg_p_nom_limits` settings with Eurelectric alternatives.",
           "properties": {
             "agg_offwind": {
               "default": false,
@@ -5430,7 +5535,7 @@
             },
             "file": {
               "default": "data/agg_p_nom_minmax.csv",
-              "description": "Reference to `.csv` file specifying per carrier generator nominal capacity constraints for individual countries and planning horizons. Defaults to `data/agg_p_nom_minmax.csv`.",
+              "description": "Reference to `.csv` file specifying per carrier generator nominal capacity constraints for individual countries and planning horizons. Default: `data/agg_p_nom_minmax.csv`. Eurelectric alternatives: `data/agg_p_nom_real_0.1_res_cap.csv` (10% reserve), `data/agg_p_nom_real_0.3_res_cap.csv` (30% reserve), `data/agg_p_nom_solar_cap.csv` (solar-focused).",
               "type": "string"
             }
           }
@@ -5760,7 +5865,7 @@
       }
     },
     "_AggPNomLimitsConfig": {
-      "description": "Configuration for `solving.agg_p_nom_limits` settings.",
+      "description": "Configuration for `solving.agg_p_nom_limits` settings with Eurelectric alternatives.",
       "properties": {
         "agg_offwind": {
           "default": false,
@@ -5779,7 +5884,7 @@
         },
         "file": {
           "default": "data/agg_p_nom_minmax.csv",
-          "description": "Reference to `.csv` file specifying per carrier generator nominal capacity constraints for individual countries and planning horizons. Defaults to `data/agg_p_nom_minmax.csv`.",
+          "description": "Reference to `.csv` file specifying per carrier generator nominal capacity constraints for individual countries and planning horizons. Default: `data/agg_p_nom_minmax.csv`. Eurelectric alternatives: `data/agg_p_nom_real_0.1_res_cap.csv` (10% reserve), `data/agg_p_nom_real_0.3_res_cap.csv` (30% reserve), `data/agg_p_nom_solar_cap.csv` (solar-focused).",
           "type": "string"
         }
       }
@@ -6738,6 +6843,84 @@
           "default": true,
           "description": "Whether to integrate the manually added transmission projects. They are taken from the previously existing links_tyndp.csv file.",
           "type": "boolean"
+        }
+      }
+    },
+    "_IndustryDSRConfig": {
+      "description": "Configuration for `industry.dsr` (demand-side response) settings.\n\nIndustry DSR models the flexibility potential of industrial electricity loads,\nallowing load shifting within configurable time windows. Each technology or\nprofile can have its own flexibility parameters.",
+      "properties": {
+        "enable": {
+          "default": false,
+          "description": "Enable industry electricity demand-side response modeling. When enabled, adds flexibility stores and links for each configured technology/profile combination.",
+          "type": "boolean"
+        },
+        "store_capital_cost": {
+          "default": 5.0,
+          "description": "Capital cost for DSR flexibility stores representing the cost of providing flexibility capacity (EUR/MWh/year). Higher values reduce DSR utilization.",
+          "type": "number"
+        },
+        "link_capital_cost": {
+          "default": 0.0,
+          "description": "Capital cost for DSR links connecting loads to flexibility stores (EUR/MW/year). Usually set to 0 as the flexibility cost is captured in store_capital_cost.",
+          "type": "number"
+        },
+        "flexibility_fraction": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Fraction of load that can participate in DSR, keyed by 'profile|technology' (e.g., 'Iron & steel industry|Scrap-EAF': 0.85). Values should be between 0 and 1. Technologies not listed are assumed to have zero flexibility.",
+          "type": "object"
+        },
+        "shift_hours": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Maximum hours that load can be shifted forward or backward, keyed by 'profile|technology' (e.g., 'Iron & steel industry|Scrap-EAF': 2). Determines the energy capacity of the flexibility store relative to the load.",
+          "type": "object"
+        },
+        "restriction_time": {
+          "additionalProperties": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "description": "Checkpoint hours (0-23) at which DSR stores must return to baseline state of charge, keyed by 'profile|technology'. E.g., [6, 18] creates 12-hour periods with balance requirements at 6am and 6pm. Default [] means daily balance (at midnight).",
+          "type": "object"
+        },
+        "restriction_value": {
+          "default": 1.0,
+          "description": "Maximum state of charge as fraction for DSR flexibility storage (0 to 1). Set to 1.0 to allow full utilization of shift_hours capacity.",
+          "type": "number"
+        },
+        "technology_breakdown": {
+          "additionalProperties": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "description": "Technology breakdown within each FfE profile. Maps profile name to dictionary of {technology: share}. Shares must sum to 1.0 within each profile. Use 'auto' for automatic calculation from production data.",
+          "type": "object"
+        },
+        "negative_only": {
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "Technologies that can only reduce load (not increase), keyed by 'profile|technology'. Set to true for processes like chlor-alkali where ramping up is not feasible. Default false = bidirectional flexibility.",
+          "type": "object"
+        },
+        "min_load": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Minimum load constraint as fraction of baseline load (hard operational limit), keyed by 'profile|technology'. E.g., 0.70 means load can only drop to 70% of baseline. Used for processes with minimum operating requirements.",
+          "type": "object"
+        },
+        "ramp_rate": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Ramp rate limits per hour as fraction of capacity, keyed by 'profile|technology' or 'default'. E.g., {'default': 0.5} = 50%/hour max ramp. Use 1.0 for no ramp constraint.",
+          "type": "object"
         }
       }
     },
@@ -7805,7 +7988,7 @@
       }
     },
     "_SolvingOptionsConfig": {
-      "description": "Configuration for `solving.options` settings.",
+      "description": "Configuration for `solving.options` with Eurelectric extensions.",
       "properties": {
         "clip_p_max_pu": {
           "default": 0.01,
@@ -8014,6 +8197,11 @@
               "type": "string"
             }
           }
+        },
+        "assign_all_duals": {
+          "default": false,
+          "description": "Assign dual values for all constraints (not just binding ones). Useful for marginal price analysis.",
+          "type": "boolean"
         }
       }
     },
@@ -8216,7 +8404,7 @@
       }
     },
     "run": {
-      "description": "Configuration for top level `run` settings.",
+      "description": "Configuration for `run` settings with Eurelectric extensions.",
       "properties": {
         "prefix": {
           "default": "",
@@ -8298,6 +8486,11 @@
           "examples": [
             true
           ],
+          "type": "boolean"
+        },
+        "shared_cutouts": {
+          "default": false,
+          "description": "Share atlite cutouts between runs to save disk space and computation time.",
           "type": "boolean"
         }
       }
@@ -8452,11 +8645,16 @@
       }
     },
     "enable": {
-      "description": "Configuration for `enable` settings.",
+      "description": "Configuration for `enable` settings with Eurelectric extensions.",
       "properties": {
         "drop_leap_day": {
           "default": true,
           "description": "Switch to drop February 29 from all time-dependent data in leap years.",
+          "type": "boolean"
+        },
+        "retrieve": {
+          "default": true,
+          "description": "Enable data retrieval rules. Set to false to skip downloading external data.",
           "type": "boolean"
         }
       }
@@ -10559,7 +10757,7 @@
       }
     },
     "sector": {
-      "description": "Configuration for `sector` settings.",
+      "description": "Configuration for `sector` settings with Eurelectric transport extensions.",
       "properties": {
         "transport": {
           "default": true,
@@ -11549,11 +11747,18 @@
               "type": "object"
             }
           }
+        },
+        "land_transport_passenger_km_scaling": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed scaling factors for land transport passenger-km demand. Maps planning horizon year to scaling factor (e.g., {2030: 1.03, 2040: 1.06}).",
+          "type": "object"
         }
       }
     },
     "industry": {
-      "description": "Configuration for `industry` settings.",
+      "description": "Configuration for `industry` settings with Eurelectric DSR extensions.",
       "properties": {
         "St_primary_fraction": {
           "additionalProperties": {
@@ -11754,6 +11959,89 @@
           "default": 0.013,
           "description": "The emissions from oil fuel processing (e.g. oil in petrochemical refinieries). The default value of 0.013 tCO2/MWh is based on DE statistics for 2019; the EU value is very similar.",
           "type": "number"
+        },
+        "dsr": {
+          "description": "Configuration for `industry.dsr` (demand-side response) settings.\n\nIndustry DSR models the flexibility potential of industrial electricity loads,\nallowing load shifting within configurable time windows. Each technology or\nprofile can have its own flexibility parameters.",
+          "properties": {
+            "enable": {
+              "default": false,
+              "description": "Enable industry electricity demand-side response modeling. When enabled, adds flexibility stores and links for each configured technology/profile combination.",
+              "type": "boolean"
+            },
+            "store_capital_cost": {
+              "default": 5.0,
+              "description": "Capital cost for DSR flexibility stores representing the cost of providing flexibility capacity (EUR/MWh/year). Higher values reduce DSR utilization.",
+              "type": "number"
+            },
+            "link_capital_cost": {
+              "default": 0.0,
+              "description": "Capital cost for DSR links connecting loads to flexibility stores (EUR/MW/year). Usually set to 0 as the flexibility cost is captured in store_capital_cost.",
+              "type": "number"
+            },
+            "flexibility_fraction": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "description": "Fraction of load that can participate in DSR, keyed by 'profile|technology' (e.g., 'Iron & steel industry|Scrap-EAF': 0.85). Values should be between 0 and 1. Technologies not listed are assumed to have zero flexibility.",
+              "type": "object"
+            },
+            "shift_hours": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "description": "Maximum hours that load can be shifted forward or backward, keyed by 'profile|technology' (e.g., 'Iron & steel industry|Scrap-EAF': 2). Determines the energy capacity of the flexibility store relative to the load.",
+              "type": "object"
+            },
+            "restriction_time": {
+              "additionalProperties": {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              "description": "Checkpoint hours (0-23) at which DSR stores must return to baseline state of charge, keyed by 'profile|technology'. E.g., [6, 18] creates 12-hour periods with balance requirements at 6am and 6pm. Default [] means daily balance (at midnight).",
+              "type": "object"
+            },
+            "restriction_value": {
+              "default": 1.0,
+              "description": "Maximum state of charge as fraction for DSR flexibility storage (0 to 1). Set to 1.0 to allow full utilization of shift_hours capacity.",
+              "type": "number"
+            },
+            "technology_breakdown": {
+              "additionalProperties": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "description": "Technology breakdown within each FfE profile. Maps profile name to dictionary of {technology: share}. Shares must sum to 1.0 within each profile. Use 'auto' for automatic calculation from production data.",
+              "type": "object"
+            },
+            "negative_only": {
+              "additionalProperties": {
+                "type": "boolean"
+              },
+              "description": "Technologies that can only reduce load (not increase), keyed by 'profile|technology'. Set to true for processes like chlor-alkali where ramping up is not feasible. Default false = bidirectional flexibility.",
+              "type": "object"
+            },
+            "min_load": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "description": "Minimum load constraint as fraction of baseline load (hard operational limit), keyed by 'profile|technology'. E.g., 0.70 means load can only drop to 70% of baseline. Used for processes with minimum operating requirements.",
+              "type": "object"
+            },
+            "ramp_rate": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "description": "Ramp rate limits per hour as fraction of capacity, keyed by 'profile|technology' or 'default'. E.g., {'default': 0.5} = 50%/hour max ramp. Use 1.0 for no ramp constraint.",
+              "type": "object"
+            }
+          }
+        },
+        "temporal_electricity_industry_load": {
+          "default": false,
+          "description": "Use temporally resolved electricity industry load profiles from FfE data instead of flat annual profiles.",
+          "type": "boolean"
         }
       }
     },
@@ -12240,10 +12528,10 @@
       }
     },
     "solving": {
-      "description": "Configuration for `solving` settings.",
+      "description": "Configuration for `solving` settings with Eurelectric extensions.",
       "properties": {
         "options": {
-          "description": "Configuration for `solving.options` settings.",
+          "description": "Configuration for `solving.options` with Eurelectric extensions.",
           "properties": {
             "clip_p_max_pu": {
               "default": 0.01,
@@ -12452,11 +12740,16 @@
                   "type": "string"
                 }
               }
+            },
+            "assign_all_duals": {
+              "default": false,
+              "description": "Assign dual values for all constraints (not just binding ones). Useful for marginal price analysis.",
+              "type": "boolean"
             }
           }
         },
         "agg_p_nom_limits": {
-          "description": "Configuration for `solving.agg_p_nom_limits` settings.",
+          "description": "Configuration for `solving.agg_p_nom_limits` settings with Eurelectric alternatives.",
           "properties": {
             "agg_offwind": {
               "default": false,
@@ -12475,7 +12768,7 @@
             },
             "file": {
               "default": "data/agg_p_nom_minmax.csv",
-              "description": "Reference to `.csv` file specifying per carrier generator nominal capacity constraints for individual countries and planning horizons. Defaults to `data/agg_p_nom_minmax.csv`.",
+              "description": "Reference to `.csv` file specifying per carrier generator nominal capacity constraints for individual countries and planning horizons. Default: `data/agg_p_nom_minmax.csv`. Eurelectric alternatives: `data/agg_p_nom_real_0.1_res_cap.csv` (10% reserve), `data/agg_p_nom_real_0.3_res_cap.csv` (30% reserve), `data/agg_p_nom_solar_cap.csv` (solar-focused).",
               "type": "string"
             }
           }

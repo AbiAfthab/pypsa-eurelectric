@@ -12,6 +12,24 @@ Release Notes
 
 * refactor: Use scripts path provider consistently (https://github.com/PyPSA/pypsa-eur/pull/2093).
 
+* Fix compatibility of rules `build_gas_input_locations` and `build_gas_network` with pyogrio >=0.12.0 (https://github.com/PyPSA/pypsa-eur/pull/1955).
+
+* Added interactive (html) balance maps `results/maps/interactive/` (https://github.com/PyPSA/pypsa-eur/pull/1935) based on https://docs.pypsa.org/latest/user-guide/plotting/explore/. Settings for interactive maps can be found in `plotting.default.yaml` under `plotting["balance_map_interactive"]`.
+
+* Relocated and modified static (pdf) balance maps to `results/maps/static/` (https://github.com/PyPSA/pypsa-eur/pull/1935) for better organization.
+
+* With https://github.com/PyPSA/pypsa-eur/pull/1935, note that bus carriers for balance maps containing spaces need to be specified with underscores `_` in the configuration file, e.g., `co2_stored` instead of `co2 stored`. This is to ensure compatibility with queue managers like slurm.
+
+* Fix building osm network using overpass API (https://github.com/PyPSA/pypsa-eur/pull/1940).
+
+* Added configuration option to set overpass API URL, maximum retries, timeout and user agent information (https://github.com/PyPSA/pypsa-eur/pull/1940 and https://pypsa-eur.readthedocs.io/en/latest/configuration.html#overpass_api). For a list of public overpass APIs see `here <https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances>`_.
+
+* Refactored `solve_network.py` and `solve_operations_network.py` to separate optimization problem preparation from solving, enabling inspection of optimization problems before solve execution.
+
+* Added example configurations for rolling horizon and iterative optimization modes in `config/examples/`.
+
+* Added existing biomass decentral/rural residential and services heating capacity.
+
 * Fix: Lower the lower bound used to group the power plants in ``add_existing_baseyear`` (https://github.com/PyPSA/pypsa-eur/pull/2097). This now includes all power plants built since 1900.
 
 * feat: Add options for carrier specific load shedding and load sinks configurable via `load_shedding` and `load_sinks` respectively (https://github.com/PyPSA/pypsa-eur/pull/2105).
@@ -323,6 +341,8 @@ PyPSA-Eur v2026.02.0 (18th February 2026)
 
 * Removed pinned environment files mention from pre-commit-config-yaml (https://github.com/PyPSA/pypsa-eur/pull/1837).
 
+
+* Add configurable **industry electricity demand-side response (DSR)** based on virtual ``Store`` components with time-varying energy bounds per FfE profile. New configuration keys under ``industry: dsr:`` allow setting flexibility fractions, shift hours, checkpoint hours (``restriction_time``) and a global ``restriction_value``; a dedicated build step (``build_industry_dsr_profile``) creates an hourly checkpoint profile that is applied in ``prepare_sector_network.py`` as time-varying ``e_max_pu``/``e_min_pu`` for industry DSR stores, with bus mapping aligned to low-voltage industry loads.
 
 PyPSA-Eur v2025.07.0 (11th July 2025)
 =====================================
