@@ -2346,16 +2346,11 @@
       }
     },
     "EnableConfig": {
-      "description": "Configuration for `enable` settings with Eurelectric extensions.",
+      "description": "Configuration for `enable` settings.",
       "properties": {
         "drop_leap_day": {
           "default": true,
           "description": "Switch to drop February 29 from all time-dependent data in leap years.",
-          "type": "boolean"
-        },
-        "retrieve": {
-          "default": true,
-          "description": "Enable data retrieval rules. Set to false to skip downloading external data.",
           "type": "boolean"
         }
       }
@@ -4072,7 +4067,7 @@
       }
     },
     "RunConfig": {
-      "description": "Configuration for `run` settings with Eurelectric extensions.",
+      "description": "Configuration for top level `run` settings.",
       "properties": {
         "prefix": {
           "default": "",
@@ -4154,11 +4149,6 @@
           "examples": [
             true
           ],
-          "type": "boolean"
-        },
-        "shared_cutouts": {
-          "default": false,
-          "description": "Share atlite cutouts between runs to save disk space and computation time.",
           "type": "boolean"
         }
       }
@@ -5295,10 +5285,10 @@
       }
     },
     "SolvingConfig": {
-      "description": "Configuration for `solving` settings with Eurelectric extensions.",
+      "description": "Configuration for `solving` settings.",
       "properties": {
         "options": {
-          "description": "Configuration for `solving.options` with Eurelectric extensions.",
+          "description": "Configuration for `solving.options` settings.",
           "properties": {
             "clip_p_max_pu": {
               "default": 0.01,
@@ -5507,16 +5497,11 @@
                   "type": "string"
                 }
               }
-            },
-            "assign_all_duals": {
-              "default": false,
-              "description": "Assign dual values for all constraints (not just binding ones). Useful for marginal price analysis.",
-              "type": "boolean"
             }
           }
         },
         "agg_p_nom_limits": {
-          "description": "Configuration for `solving.agg_p_nom_limits` settings with Eurelectric alternatives.",
+          "description": "Configuration for `solving.agg_p_nom_limits` settings.",
           "properties": {
             "agg_offwind": {
               "default": false,
@@ -5535,7 +5520,7 @@
             },
             "file": {
               "default": "data/agg_p_nom_minmax.csv",
-              "description": "Reference to `.csv` file specifying per carrier generator nominal capacity constraints for individual countries and planning horizons. Default: `data/agg_p_nom_minmax.csv`. Eurelectric alternatives: `data/agg_p_nom_real_0.1_res_cap.csv` (10% reserve), `data/agg_p_nom_real_0.3_res_cap.csv` (30% reserve), `data/agg_p_nom_solar_cap.csv` (solar-focused).",
+              "description": "Reference to `.csv` file specifying per carrier generator nominal capacity constraints for individual countries and planning horizons. Defaults to `data/agg_p_nom_minmax.csv`.",
               "type": "string"
             }
           }
@@ -5865,7 +5850,7 @@
       }
     },
     "_AggPNomLimitsConfig": {
-      "description": "Configuration for `solving.agg_p_nom_limits` settings with Eurelectric alternatives.",
+      "description": "Configuration for `solving.agg_p_nom_limits` settings.",
       "properties": {
         "agg_offwind": {
           "default": false,
@@ -5884,7 +5869,7 @@
         },
         "file": {
           "default": "data/agg_p_nom_minmax.csv",
-          "description": "Reference to `.csv` file specifying per carrier generator nominal capacity constraints for individual countries and planning horizons. Default: `data/agg_p_nom_minmax.csv`. Eurelectric alternatives: `data/agg_p_nom_real_0.1_res_cap.csv` (10% reserve), `data/agg_p_nom_real_0.3_res_cap.csv` (30% reserve), `data/agg_p_nom_solar_cap.csv` (solar-focused).",
+          "description": "Reference to `.csv` file specifying per carrier generator nominal capacity constraints for individual countries and planning horizons. Defaults to `data/agg_p_nom_minmax.csv`.",
           "type": "string"
         }
       }
@@ -7988,7 +7973,7 @@
       }
     },
     "_SolvingOptionsConfig": {
-      "description": "Configuration for `solving.options` with Eurelectric extensions.",
+      "description": "Configuration for `solving.options` settings.",
       "properties": {
         "clip_p_max_pu": {
           "default": 0.01,
@@ -8197,11 +8182,6 @@
               "type": "string"
             }
           }
-        },
-        "assign_all_duals": {
-          "default": false,
-          "description": "Assign dual values for all constraints (not just binding ones). Useful for marginal price analysis.",
-          "type": "boolean"
         }
       }
     },
@@ -8404,7 +8384,7 @@
       }
     },
     "run": {
-      "description": "Configuration for `run` settings with Eurelectric extensions.",
+      "description": "Configuration for top level `run` settings.",
       "properties": {
         "prefix": {
           "default": "",
@@ -8486,11 +8466,6 @@
           "examples": [
             true
           ],
-          "type": "boolean"
-        },
-        "shared_cutouts": {
-          "default": false,
-          "description": "Share atlite cutouts between runs to save disk space and computation time.",
           "type": "boolean"
         }
       }
@@ -8645,16 +8620,11 @@
       }
     },
     "enable": {
-      "description": "Configuration for `enable` settings with Eurelectric extensions.",
+      "description": "Configuration for `enable` settings.",
       "properties": {
         "drop_leap_day": {
           "default": true,
           "description": "Switch to drop February 29 from all time-dependent data in leap years.",
-          "type": "boolean"
-        },
-        "retrieve": {
-          "default": true,
-          "description": "Enable data retrieval rules. Set to false to skip downloading external data.",
           "type": "boolean"
         }
       }
@@ -12528,10 +12498,10 @@
       }
     },
     "solving": {
-      "description": "Configuration for `solving` settings with Eurelectric extensions.",
+      "description": "Configuration for `solving` settings.",
       "properties": {
         "options": {
-          "description": "Configuration for `solving.options` with Eurelectric extensions.",
+          "description": "Configuration for `solving.options` settings.",
           "properties": {
             "clip_p_max_pu": {
               "default": 0.01,
@@ -12740,16 +12710,11 @@
                   "type": "string"
                 }
               }
-            },
-            "assign_all_duals": {
-              "default": false,
-              "description": "Assign dual values for all constraints (not just binding ones). Useful for marginal price analysis.",
-              "type": "boolean"
             }
           }
         },
         "agg_p_nom_limits": {
-          "description": "Configuration for `solving.agg_p_nom_limits` settings with Eurelectric alternatives.",
+          "description": "Configuration for `solving.agg_p_nom_limits` settings.",
           "properties": {
             "agg_offwind": {
               "default": false,
@@ -12768,7 +12733,7 @@
             },
             "file": {
               "default": "data/agg_p_nom_minmax.csv",
-              "description": "Reference to `.csv` file specifying per carrier generator nominal capacity constraints for individual countries and planning horizons. Default: `data/agg_p_nom_minmax.csv`. Eurelectric alternatives: `data/agg_p_nom_real_0.1_res_cap.csv` (10% reserve), `data/agg_p_nom_real_0.3_res_cap.csv` (30% reserve), `data/agg_p_nom_solar_cap.csv` (solar-focused).",
+              "description": "Reference to `.csv` file specifying per carrier generator nominal capacity constraints for individual countries and planning horizons. Defaults to `data/agg_p_nom_minmax.csv`.",
               "type": "string"
             }
           }

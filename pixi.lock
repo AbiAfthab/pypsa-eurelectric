@@ -5,6 +5,8 @@ environments:
     - url: https://conda.anaconda.org/conda-forge/
     - url: https://conda.anaconda.org/bioconda/
     - url: https://conda.anaconda.org/gurobi/
+    options:
+      pypi-prerelease-mode: if-necessary-or-explicit
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
@@ -195,6 +197,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/hdx-python-utilities-4.0.8-pyh332efcf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/hicolor-icon-theme-0.17-ha770c72_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/highspy-1.13.1-np2py313h73dcb5b_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/holidays-0.93-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/html5lib-1.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.9-pyh29332c3_0.conda
@@ -829,6 +832,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/hdx-python-utilities-4.0.8-pyh332efcf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/hicolor-icon-theme-0.17-h694c41f_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/highspy-1.13.1-np2py313h1160f3e_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/holidays-0.93-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/html5lib-1.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.9-pyh29332c3_0.conda
@@ -1404,6 +1408,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/hdx-python-utilities-4.0.8-pyh332efcf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/hicolor-icon-theme-0.17-hce30654_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/highspy-1.13.1-np2py313hdc65ad0_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/holidays-0.93-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/html5lib-1.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.9-pyh29332c3_0.conda
@@ -1971,6 +1976,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/hdx-python-country-4.1.1-pyh332efcf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hdx-python-utilities-4.0.8-pyh332efcf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/highspy-1.13.1-np2py313h776c0ec_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/holidays-0.93-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/html5lib-1.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.9-pyh29332c3_0.conda
@@ -2371,6 +2377,8 @@ environments:
     - url: https://conda.anaconda.org/conda-forge/
     - url: https://conda.anaconda.org/bioconda/
     - url: https://conda.anaconda.org/gurobi/
+    options:
+      pypi-prerelease-mode: if-necessary-or-explicit
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
@@ -3868,6 +3876,8 @@ environments:
     - url: https://conda.anaconda.org/conda-forge/
     - url: https://conda.anaconda.org/bioconda/
     - url: https://conda.anaconda.org/gurobi/
+    options:
+      pypi-prerelease-mode: if-necessary-or-explicit
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
@@ -4058,6 +4068,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/hdx-python-utilities-4.0.8-pyh332efcf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/hicolor-icon-theme-0.17-ha770c72_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/highspy-1.13.1-np2py313h73dcb5b_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/holidays-0.93-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/html5lib-1.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.9-pyh29332c3_0.conda
@@ -4692,6 +4703,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/hdx-python-utilities-4.0.8-pyh332efcf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/hicolor-icon-theme-0.17-h694c41f_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/highspy-1.13.1-np2py313h1160f3e_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/holidays-0.93-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/html5lib-1.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.9-pyh29332c3_0.conda
@@ -5267,6 +5279,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/hdx-python-utilities-4.0.8-pyh332efcf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/hicolor-icon-theme-0.17-hce30654_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/highspy-1.13.1-np2py313hdc65ad0_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/holidays-0.93-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/html5lib-1.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.9-pyh29332c3_0.conda
@@ -5834,6 +5847,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/hdx-python-country-4.1.1-pyh332efcf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hdx-python-utilities-4.0.8-pyh332efcf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/highspy-1.13.1-np2py313h776c0ec_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/holidays-0.93-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/html5lib-1.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/httpcore-1.0.9-pyh29332c3_0.conda
@@ -14352,6 +14366,17 @@ packages:
   license_family: MIT
   size: 2476254
   timestamp: 1770878956164
+- conda: https://conda.anaconda.org/conda-forge/noarch/holidays-0.93-pyhcf101f3_0.conda
+  sha256: f51c3b04a3e08e0f367db8b34d035a20ea478fcb81b2694a6c3622682121d7de
+  md5: db9e61e6b3b82e8be30373d5e8f19fd3
+  depends:
+  - python >=3.10
+  - python-dateutil >=2.9.0.post0,<3
+  - python
+  license: MIT
+  license_family: MIT
+  size: 621109
+  timestamp: 1773694859921
 - conda: https://conda.anaconda.org/conda-forge/noarch/hpack-4.1.0-pyhd8ed1ab_0.conda
   sha256: 6ad78a180576c706aabeb5b4c8ceb97c0cb25f1e112d76495bff23e3779948ba
   md5: 0a802cb9888dd14eeefc611f05c40b6e

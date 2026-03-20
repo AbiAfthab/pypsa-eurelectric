@@ -30,7 +30,6 @@ run:
     policy: false
     exclude: []
   use_shadow_directory: false
-  shared_cutouts: false
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#foresight
 foresight: overnight
@@ -92,7 +91,6 @@ snapshots:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#enable
 enable:
   drop_leap_day: true
-  retrieve: true
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#co2_budget
 co2_budget:
@@ -1192,7 +1190,6 @@ solving:
     store_model: false
     model_kwargs:
       solver_dir: ""
-    assign_all_duals: false
   agg_p_nom_limits:
     agg_offwind: false
     agg_solar: false

@@ -1,0 +1,160 @@
+# SPDX-FileCopyrightText: Contributors to PyPSA-Eurelectric
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# PyPSA-Eurelectric specific configuration defaults
+# This file contains settings specific to the Eurelectric project
+# that extend/override the base PyPSA-Eur configuration.
+#
+# These settings are loaded after config.default.yaml and override
+# base values where needed.
+
+# =============================================================================
+# RUN SETTINGS
+# =============================================================================
+run:
+  disable_progressbar: true
+  shared_cutouts: true
+
+# =============================================================================
+# ATLITE / CUTOUTS
+# =============================================================================
+atlite:
+  default_cutout: "europe-2019-sarah3-era5"
+
+# =============================================================================
+# COUNTRIES
+# =============================================================================
+# EU27 + UK + Norway + Switzerland (excludes Balkans: AL, BA, ME, MK, RS, XK)
+countries:
+  - AT
+  - BE
+  - BG
+  - CH
+  - CZ
+  - DE
+  - DK
+  - EE
+  - ES
+  - FI
+  - FR
+  - GB
+  - GR
+  - HR
+  - HU
+  - IE
+  - IT
+  - LT
+  - LU
+  - LV
+  - NL
+  - "NO"
+  - PL
+  - PT
+  - RO
+  - SE
+  - SI
+  - SK
+
+# =============================================================================
+# CLUSTERING
+# =============================================================================
+clustering:
+  temporal:
+    resolution_sector: 3h
+
+# =============================================================================
+# SECTOR COUPLING SETTINGS
+# =============================================================================
+sector:
+  # Disabled features for eurelectric runs
+  regional_oil_demand: false
+  regional_co2_sequestration_potential:
+    enable: false
+  co2_spatial: false
+  co2_network: false
+  ammonia: false
+  biomass_spatial: false
+  biomass_to_liquid: false
+  electrobiofuels: false
+
+  # Transport scaling (year-specific scaling can be added in scenario configs)
+  land_transport_passenger_km_scaling: {}
+
+  # Heat sector DSM
+  residential_heat:
+    dsm:
+      enable: true
+
+  # Space heat reduction
+  reduce_space_heat_exogenously: true
+
+  # Electric vehicle flexibility
+  bev_dsm: true
+  v2g: true
+
+# =============================================================================
+# INDUSTRY SETTINGS
+# =============================================================================
+industry:
+  # Waste-to-energy
+  waste_to_energy: true
+  waste_to_energy_cc: true
+
+  # HVC sequestration
+  HVC_environment_sequestration_fraction: 0.5
+
+  # V3: economically optional DSR with technology breakdown and capital costs.
+  # Config keys use FfE profile names (e.g. "Iron & steel industry"), not PyPSA industry categories
+  # (e.g. Electric arc, Cement). See INDUSTRY_CATEGORY_TO_PROFILE in build_industrial_energy_demand_per_node.py.
+  dsr:
+    enable: false
+    store_capital_cost: 5.0
+    link_capital_cost: 0.0
+    flexibility_fraction: {}
+    shift_hours: {}
+    restriction_time: {}
+    restriction_value: 1.0
+    technology_breakdown: {}
+    negative_only: {}
+    min_load: {}
+    ramp_rate:
+      default: 1.0
+
+  temporal_electricity_industry_load: false
+
+# =============================================================================
+# TRANSMISSION PROJECTS
+# =============================================================================
+transmission_projects:
+  include:
+    tyndp2020: true
+    nep: false
+    manual: true
+
+# =============================================================================
+# SOLVING SETTINGS
+# =============================================================================
+solving:
+  options:
+    assign_all_duals: false
+  agg_p_nom_limits:
+    agg_offwind: false
+    agg_solar: false
+    include_existing: false
+    file: data/agg_p_nom_minmax.csv
+  constraints:
+    CCL: false
+    EQ: false
+    BAU: false
+    SAFE: false
+  solver:
+    name: gurobi
+    options: gurobi-default
+  mem_mb: 128000
+
+# =============================================================================
+# ENABLE FLAGS
+# =============================================================================
+enable:
+  retrieve: true

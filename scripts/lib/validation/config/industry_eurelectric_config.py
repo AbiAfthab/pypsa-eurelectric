@@ -78,9 +78,6 @@ class IndustryEurelectricConfigUpdater(ConfigUpdater):
     Extends the PyPSA-Eur schema with:
     - industry.dsr: Industry demand-side response configuration
     - industry.temporal_electricity_industry_load: FfE temporal profiles toggle
-    - solving.options.assign_all_duals: Dual variable export
-    - enable.retrieve: Data retrieval toggle
-    - run.shared_cutouts: Cutout sharing toggle
     """
 
     @property
@@ -94,9 +91,9 @@ class IndustryEurelectricConfigUpdater(ConfigUpdater):
         return None
 
     def update(self):
-        """Apply Eurelectric-specific schema extensions."""
+        """Apply Eurelectric-specific schema extensions for industry DSR."""
 
-        # Step 1: Extend IndustryConfig with DSR and temporal load option
+        # Extend IndustryConfig with DSR and temporal load option
         industry_config_field = self.base_config.model_fields["industry"]
         IndustryConfigClass = industry_config_field.default_factory().__class__
 
@@ -119,96 +116,13 @@ class IndustryEurelectricConfigUpdater(ConfigUpdater):
             ),
         )
 
-        # Step 2: Extend SolvingOptionsConfig with assign_all_duals
-        solving_config_field = self.base_config.model_fields["solving"]
-        SolvingConfigClass = solving_config_field.default_factory().__class__
-        options_config_field = SolvingConfigClass.model_fields["options"]
-        OptionsConfigClass = options_config_field.default_factory().__class__
-
-        ExtendedOptionsConfig = self._apply_updates(
-            __base__=OptionsConfigClass,
-            __doc__="Configuration for `solving.options` with Eurelectric extensions.",
-            assign_all_duals=(
-                bool,
-                Field(
-                    False,
-                    description="Assign dual values for all constraints (not just binding ones). Useful for marginal price analysis.",
-                ),
-            ),
-        )
-
-        ExtendedSolvingConfig = self._apply_updates(
-            __base__=SolvingConfigClass,
-            __doc__="Configuration for `solving` settings with Eurelectric extensions.",
-            options=(
-                ExtendedOptionsConfig,
-                Field(
-                    default_factory=ExtendedOptionsConfig,
-                    description="Solving options.",
-                ),
-            ),
-        )
-
-        # Step 3: Extend EnableConfig with retrieve
-        enable_config_field = self.base_config.model_fields["enable"]
-        EnableConfigClass = enable_config_field.default_factory().__class__
-
-        ExtendedEnableConfig = self._apply_updates(
-            __base__=EnableConfigClass,
-            __doc__="Configuration for `enable` settings with Eurelectric extensions.",
-            retrieve=(
-                bool,
-                Field(
-                    True,
-                    description="Enable data retrieval rules. Set to false to skip downloading external data.",
-                ),
-            ),
-        )
-
-        # Step 4: Extend RunConfig with shared_cutouts
-        run_config_field = self.base_config.model_fields["run"]
-        RunConfigClass = run_config_field.default_factory().__class__
-
-        ExtendedRunConfig = self._apply_updates(
-            __base__=RunConfigClass,
-            __doc__="Configuration for `run` settings with Eurelectric extensions.",
-            shared_cutouts=(
-                bool,
-                Field(
-                    False,
-                    description="Share atlite cutouts between runs to save disk space and computation time.",
-                ),
-            ),
-        )
-
-        # Step 5: Apply all updates to the root schema
+        # Apply industry updates to the root schema
         return self._apply_updates(
             industry=(
                 ExtendedIndustryConfig,
                 Field(
                     default_factory=ExtendedIndustryConfig,
                     description="Industry sector configuration.",
-                ),
-            ),
-            solving=(
-                ExtendedSolvingConfig,
-                Field(
-                    default_factory=ExtendedSolvingConfig,
-                    description="Solver and optimization configuration.",
-                ),
-            ),
-            enable=(
-                ExtendedEnableConfig,
-                Field(
-                    default_factory=ExtendedEnableConfig,
-                    description="Flags to enable/disable workflow features.",
-                ),
-            ),
-            run=(
-                ExtendedRunConfig,
-                Field(
-                    default_factory=ExtendedRunConfig,
-                    description="Run configuration for PyPSA-EUR workflow execution.",
                 ),
             ),
         )

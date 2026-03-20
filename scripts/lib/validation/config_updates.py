@@ -9,6 +9,5 @@ Any imports included in this file will be automatically registered as config upd
 See the docs for more details: https://pypsa-eur.readthedocs.io/en/latest/validation_dev.html#soft-fork-ext
 """
 
-import scripts.lib.validation.config.data_eurelectric_config  # noqa: F401
 import scripts.lib.validation.config.industry_eurelectric_config  # noqa: F401
 import scripts.lib.validation.config.transport_eurelectric_config  # noqa: F401

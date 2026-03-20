@@ -24,6 +24,7 @@ from scripts.lib.validation.config import validate_config
 
 
 configfile: "config/config.default.yaml"
+configfile: "config/config.eurelectric.default.yaml"
 configfile: "config/plotting.default.yaml"
 
 # Config stacking: override defaults with small scenario files via CLI:
