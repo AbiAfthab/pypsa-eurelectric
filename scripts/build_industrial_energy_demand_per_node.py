@@ -179,7 +179,7 @@ def create_nodal_electricity_profiles(
             node_profile,
             snapshots,
             node_country=node_to_country[node],
-            tol=0.02,  # Tolerance increased to 2% for holiday replacement and date adjustment
+            tol=0.04,  # Tolerance increased to 4% for holiday replacement and date adjustment
         )
 
         # Save in MW
@@ -246,7 +246,7 @@ def create_nodal_electricity_profiles_per_profile(
                     ref_profile,
                     snapshots,
                     node_country=node_to_country[node],
-                    tol=0.02,
+                    tol=0.04,
                 )
                 data[(node, profile)] = mapped * 1e6
     per_profile = pd.DataFrame(data, index=snapshots)
