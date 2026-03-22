@@ -94,7 +94,7 @@ atlite:
 
 clustering:
   temporal:
-    resolution_sector: 3h
+    resolution_sector: 6h
 
 transmission_projects:
   include:
