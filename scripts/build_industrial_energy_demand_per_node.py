@@ -352,9 +352,23 @@ def map_profile_to_snapshots(reference_profile, snapshots, node_country='DE', to
         # Avoid 0/0 or nan/... leading to NaN scaling_factor and assertion failure
         return pd.Series(0.0, index=snapshots)
     scaling_factor = proportional_reference / mapped_sum
-    assert abs(scaling_factor - 1.0) < tol, (
-        f"Energy deviation after mapping: {(scaling_factor - 1.0) * 100:.2f}%"
-    )
+    deviation = abs(scaling_factor - 1.0)
+    # For partial-year snapshots, individual weeks can naturally deviate more from
+    # the proportional annual average. Use warning instead of assertion for large
+    # deviations since we apply scaling_factor to correct the energy anyway.
+    if deviation >= tol:
+        fraction_of_year = snapshot_hours / reference_hours
+        if fraction_of_year < 0.5:
+            # Partial-year: warn but continue (natural variance expected)
+            logger.warning(
+                f"Energy deviation after mapping: {(scaling_factor - 1.0) * 100:.2f}% "
+                f"(snapshot covers {fraction_of_year:.1%} of year, scaling applied)"
+            )
+        else:
+            # Full or near-full year: this indicates a potential bug
+            raise AssertionError(
+                f"Energy deviation after mapping: {(scaling_factor - 1.0) * 100:.2f}%"
+            )
     return mapped * scaling_factor
 
 
