@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Contributors to PyPSA-Eurelectric
+#
+# SPDX-License-Identifier: CC0-1.0
+
 # Standalone flex-2030-real-res config
 # Based on config.flex-2030.yaml with realistic RES expansion targets (CCL)
 # CO2 budget: 0.50, V2G availability: 0.10
@@ -16,13 +20,13 @@ foresight: overnight
 
 scenario:
   clusters:
-    - 37
+  - 37
   opts:
-    - ""
+  - ""
   sector_opts:
-    - ""
+  - ""
   planning_horizons:
-    - "2030"
+  - "2030"
 
 costs:
   year: 2030
@@ -31,34 +35,34 @@ co2_budget:
   2030: 0.45
 
 countries:
-  - AT
-  - BE
-  - BG
-  - CH
-  - CZ
-  - DE
-  - DK
-  - EE
-  - ES
-  - FI
-  - FR
-  - GB
-  - GR
-  - HR
-  - HU
-  - IE
-  - IT
-  - LT
-  - LU
-  - LV
-  - NL
-  - "NO"
-  - PL
-  - PT
-  - RO
-  - SE
-  - SI
-  - SK
+- AT
+- BE
+- BG
+- CH
+- CZ
+- DE
+- DK
+- EE
+- ES
+- FI
+- FR
+- GB
+- GR
+- HR
+- HU
+- IE
+- IT
+- LT
+- LU
+- LV
+- NL
+- "NO"
+- PL
+- PT
+- RO
+- SE
+- SI
+- SK
 
 snapshots:
   start: "2019-01-01"
@@ -67,17 +71,7 @@ snapshots:
 
 electricity:
   extendable_carriers:
-    Generator:
-      [
-        solar,
-        solar-hsat,
-        onwind,
-        offwind-ac,
-        offwind-dc,
-        offwind-float,
-        OCGT,
-        CCGT,
-      ]
+    Generator: [solar, solar-hsat, onwind, offwind-ac, offwind-dc, offwind-float, OCGT, CCGT]
     StorageUnit: [battery]
     Store: [H2]
     Link: []
@@ -117,8 +111,8 @@ sector:
     dsm:
       enable: true
       direction:
-        - overheat
-        - undercool
+      - overheat
+      - undercool
       restriction_value:
         2030: 0.27
   hydrogen_turbine: true
@@ -212,7 +206,7 @@ solving:
   options:
     assign_all_duals: true
   agg_p_nom_limits:
-    file: data/agg_p_nom_real_0.1_res_cap.csv
+    file: data/agg_p_nom_real_res_cap.csv
   solver:
     name: gurobi
     options: gurobi-default
