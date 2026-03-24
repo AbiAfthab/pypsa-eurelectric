@@ -24,11 +24,11 @@ from scripts.lib.validation.config import validate_config
 
 
 configfile: "config/config.default.yaml"
-configfile: "config/config.eurelectric.default.yaml"
 configfile: "config/plotting.default.yaml"
 
+
 # Config stacking: override defaults with small scenario files via CLI:
-#   snakemake --configfile config/config.default.yaml config/test/config.eu_38_2030_base.yaml config/test/config.dsr_v3_test.yaml
+#   snakemake -call --configfile config/config.eurelectric.default.yaml config/test/config.eu_38_2030_base.yaml config/test/config.dsr_v3_test.yaml
 # Backward compatibility: a local config/config.yaml is auto-loaded if present.
 
 if Path("config/config.yaml").exists():
