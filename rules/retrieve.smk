@@ -1692,21 +1692,18 @@ if (MOBILITY_PROFILES_DATASET := dataset_version("mobility_profiles"))["source"]
             copy2(input["pkw"], output["pkw"])
 
 
-if config.get("enable", {}).get("retrieve", False):
+rule retrieve_ffe_load_profiles:
+    output:
+        "data/ffe_industry_load_profiles.json",
+    log:
+        "logs/retrieve_ffe_load_profiles.log",
+    resources:
+        mem_mb=1000,
+    retries: 2
+    run:
+        data = requests.get(
+            "https://api.opendata.ffe.de/opendata", params={"id_opendata": 59}
+        ).json()
 
-    rule retrieve_ffe_load_profiles:
-        output:
-            "data/ffe_industry_load_profiles.json",
-        log:
-            "logs/retrieve_ffe_load_profiles.log",
-        resources:
-            mem_mb=1000,
-        retries: 2
-        run:
-            data = requests.get(
-                "https://api.opendata.ffe.de/opendata",
-                params={"id_opendata": 59}
-            ).json()
-
-            with open(output[0], "w") as f:
-                json.dump(data, f)
+        with open(output[0], "w") as f:
+            json.dump(data, f)
