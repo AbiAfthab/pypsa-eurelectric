@@ -34,34 +34,34 @@ snapshots:
 # =============================================================================
 # EU27 + UK + Norway + Switzerland (excludes Balkans: AL, BA, ME, MK, RS, XK)
 countries:
-  - AT
-  - BE
-  - BG
-  - CH
-  - CZ
-  - DE
-  - DK
-  - EE
-  - ES
-  - FI
-  - FR
-  - GB
-  - GR
-  - HR
-  - HU
-  - IE
-  - IT
-  - LT
-  - LU
-  - LV
-  - NL
-  - "NO"
-  - PL
-  - PT
-  - RO
-  - SE
-  - SI
-  - SK
+- AT
+- BE
+- BG
+- CH
+- CZ
+- DE
+- DK
+- EE
+- ES
+- FI
+- FR
+- GB
+- GR
+- HR
+- HU
+- IE
+- IT
+- LT
+- LU
+- LV
+- NL
+- "NO"
+- PL
+- PT
+- RO
+- SE
+- SI
+- SK
 
 # =============================================================================
 # CLUSTERING
@@ -159,9 +159,3 @@ solving:
     name: gurobi
     options: gurobi-default
   mem_mb: 128000
-
-# =============================================================================
-# ENABLE FLAGS
-# =============================================================================
-enable:
-  retrieve: true

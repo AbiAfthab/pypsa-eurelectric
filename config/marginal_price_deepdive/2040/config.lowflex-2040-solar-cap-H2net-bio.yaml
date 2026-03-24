@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Contributors to PyPSA-Eurelectric
+#
+# SPDX-License-Identifier: CC0-1.0
+
 # Low-flexibility 2040 config
 # Based on flex-2040-solar-cap-H2net-bio with drastically reduced flexibility
 # V2G, residential heat DSM, industry DSR, and H2 imports all curtailed
@@ -17,13 +21,13 @@ foresight: overnight
 
 scenario:
   clusters:
-    - 37
+  - 37
   opts:
-    - ""
+  - ""
   sector_opts:
-    - ""
+  - ""
   planning_horizons:
-    - "2040"
+  - "2040"
 
 costs:
   year: 2040
@@ -32,57 +36,44 @@ co2_budget:
   2040: 0.15
 
 countries:
-  - AT
-  - BE
-  - BG
-  - CH
-  - CZ
-  - DE
-  - DK
-  - EE
-  - ES
-  - FI
-  - FR
-  - GB
-  - GR
-  - HR
-  - HU
-  - IE
-  - IT
-  - LT
-  - LU
-  - LV
-  - NL
-  - "NO"
-  - PL
-  - PT
-  - RO
-  - SE
-  - SI
-  - SK
+- AT
+- BE
+- BG
+- CH
+- CZ
+- DE
+- DK
+- EE
+- ES
+- FI
+- FR
+- GB
+- GR
+- HR
+- HU
+- IE
+- IT
+- LT
+- LU
+- LV
+- NL
+- "NO"
+- PL
+- PT
+- RO
+- SE
+- SI
+- SK
 
 snapshots:
   start: "2019-01-01"
   end: "2020-01-01"
   inclusive: left
 
-enable:
-  retrieve: true  
-
 electricity:
   renewable_carriers: [solar, solar-hsat, onwind, offwind-ac, offwind-dc, offwind-float, hydro]
   extendable_carriers:
-    Generator:
-      [
-        solar,
-        solar-hsat,
-        onwind,
-        offwind-ac,
-        offwind-dc,
-        offwind-float,
-        OCGT,
-        CCGT,
-      ]
+    Generator: [solar, solar-hsat, onwind, offwind-ac, offwind-dc, offwind-float, OCGT, CCGT]
     StorageUnit: [battery]
     Store: [H2]
     Link: []
@@ -128,15 +119,15 @@ sector:
     dsm:
       enable: true
       direction:
-        - overheat
-        - undercool
+      - overheat
+      - undercool
       restriction_value:
         2040: 0.10
   land_transport_passenger_km_scaling:
     2020: 1.01
     2030: 1.03
     2040: 1.06
-    2050: 1.09      
+    2050: 1.09
   hydrogen_turbine: true
   hydrogen_fuel_cell: true
   bev_dsm: true
@@ -176,7 +167,7 @@ sector:
     2035: 100
     2040: 240
     2045: 250
-    2050: 250  
+    2050: 250
 
 industry:
   dsr:
