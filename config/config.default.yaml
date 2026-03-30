@@ -1378,7 +1378,7 @@ data:
     source: archive
     version: latest
   ffe_load_profiles:
-    source: build
+    source: primary
     version: latest
   nuts3_population:
     source: archive
