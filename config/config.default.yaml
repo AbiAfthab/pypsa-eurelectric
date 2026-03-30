@@ -1377,6 +1377,9 @@ data:
   eez:
     source: archive
     version: latest
+  ffe_load_profiles:
+    source: build
+    version: latest
   nuts3_population:
     source: archive
     version: latest

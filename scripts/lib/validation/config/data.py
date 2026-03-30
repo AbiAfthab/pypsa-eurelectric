@@ -143,6 +143,10 @@ class DataConfig(BaseModel):
         default_factory=_DataSourceConfig,
         description="EEZ data source configuration.",
     )
+    ffe_load_profiles: _DataSourceConfig = Field(
+        default_factory=lambda: _DataSourceConfig(source="build"),
+        description="FfE industry load profiles data source configuration.",
+    )
     nuts3_population: _DataSourceConfig = Field(
         default_factory=_DataSourceConfig,
         description="NUTS3 population data source configuration.",
