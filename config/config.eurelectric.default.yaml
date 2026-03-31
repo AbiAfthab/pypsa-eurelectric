@@ -114,21 +114,130 @@ industry:
   # V3: economically optional DSR with technology breakdown and capital costs.
   # Config keys use FfE profile names (e.g. "Iron & steel industry"), not PyPSA industry categories
   # (e.g. Electric arc, Cement). See INDUSTRY_CATEGORY_TO_PROFILE in build_industrial_energy_demand_per_node.py.
+  #
+  # Physical/engineering parameters (technology_breakdown, shift_hours, restriction_time,
+  # negative_only, min_load, ramp_rate) are defined here as they describe the structure
+  # and physical limits of industrial processes — constant across scenarios.
+  # Scenario-varying parameters (enable, store_capital_cost, flexibility_fraction)
+  # should be overridden in run-specific configs.
   dsr:
     enable: false
     store_capital_cost: 5.0
     link_capital_cost: 0.0
-    flexibility_fraction: {}
-    shift_hours: {}
-    restriction_time: {}
     restriction_value: 1.0
-    technology_breakdown: {}
-    negative_only: {}
-    min_load: {}
-    ramp_rate:
-      default: 1.0
 
-  temporal_electricity_industry_load: false
+    # How each FfE profile is split into sub-technologies (shares must sum to 1.0)
+    technology_breakdown:
+      "Iron & steel industry":
+        "Scrap-EAF": "auto"
+        "H2-DRI-EAF": "auto"
+        "BF-BOF-CCUS": "auto"
+        "Aluminium-primary": "auto"
+        "Aluminium-secondary": "auto"
+        "Alumina": "auto"
+        "Manufacturing": 0.05
+      "Non-metallic Minerals":
+        "Cement mills": 0.40
+        "Raw mills": 0.26
+        "Kiln": 0.27
+        "Other": 0.07
+      "Paper, Pulp and Print":
+        "Pulp production": 0.30
+        "Paper machines": 0.50
+        "Printing": 0.20
+      "Non-specified (Industry)":
+        "Chlor-alkali": 0.10
+        "Other chemicals": 0.90
+
+    # Flexibility fractions per technology (override in run configs for high/low flex scenarios)
+    flexibility_fraction:
+      "Iron & steel industry|Scrap-EAF": 0.85
+      "Iron & steel industry|H2-DRI-EAF": 0.20
+      "Iron & steel industry|BF-BOF-CCUS": 0.05
+      "Iron & steel industry|Manufacturing": 0.0
+      "Iron & steel industry|Aluminium-primary": 0.125
+      "Iron & steel industry|Aluminium-secondary": 0.125
+      "Iron & steel industry|Alumina": 0.0
+      "Non-metallic Minerals|Cement mills": 0.42
+      "Non-metallic Minerals|Raw mills": 0.42
+      "Non-metallic Minerals|Kiln": 0.0
+      "Non-metallic Minerals|Other": 0.0
+      "Paper, Pulp and Print|Pulp production": 0.60
+      "Paper, Pulp and Print|Paper machines": 0.0
+      "Paper, Pulp and Print|Printing": 0.60
+      "Non-specified (Industry)|Chlor-alkali": 0.10
+      "Non-specified (Industry)|Other chemicals": 0.15
+      "Food and Tobacco": 0.10
+      "Textile and Leather": 0.10
+      "Wood and Wood Products": 0.10
+      "Transport Equipment": 0.10
+      "Machinery": 0.10
+
+    # Maximum shifting window per technology (physical/engineering constraint)
+    shift_hours:
+      "Iron & steel industry|Scrap-EAF": 2
+      "Iron & steel industry|H2-DRI-EAF": 6
+      "Iron & steel industry|BF-BOF-CCUS": 1
+      "Iron & steel industry|Aluminium-primary": 3
+      "Iron & steel industry|Aluminium-secondary": 3
+      "Iron & steel industry|Alumina": 0
+      "Non-metallic Minerals|Cement mills": 4
+      "Non-metallic Minerals|Raw mills": 4
+      "Paper, Pulp and Print|Pulp production": 6
+      "Paper, Pulp and Print|Printing": 6
+      "Non-specified (Industry)|Chlor-alkali": 4
+      "Non-specified (Industry)|Other chemicals": 4
+      "Food and Tobacco": 4
+      "Textile and Leather": 4
+      "Wood and Wood Products": 4
+      "Transport Equipment": 4
+      "Machinery": 4
+
+    # Checkpoint hours for energy balance enforcement
+    restriction_time:
+      "Iron & steel industry|Scrap-EAF": [6, 18]
+      "Iron & steel industry|H2-DRI-EAF": [0, 12]
+      "Iron & steel industry|BF-BOF-CCUS": [6, 18]
+      "Iron & steel industry|Aluminium-primary": [0]
+      "Iron & steel industry|Aluminium-secondary": [0]
+      "Iron & steel industry|Alumina": [0]
+      "Non-metallic Minerals|Cement mills": [0]
+      "Non-metallic Minerals|Raw mills": [0]
+      "Paper, Pulp and Print|Pulp production": [0]
+      "Paper, Pulp and Print|Printing": [0]
+      "Non-specified (Industry)|Chlor-alkali": [0]
+      "Non-specified (Industry)|Other chemicals": [0]
+      "Iron & steel industry": [6, 18]
+      "Non-metallic Minerals": [0, 12]
+      "Paper, Pulp and Print": [0]
+      "Non-specified (Industry)": [0]
+      "Food and Tobacco": [8, 20]
+      "Textile and Leather": [8, 20]
+      "Wood and Wood Products": [8, 20]
+      "Transport Equipment": [6, 18]
+      "Machinery": [6, 18]
+
+    # Technologies that can only reduce load (not increase)
+    negative_only:
+      "Non-specified (Industry)|Chlor-alkali": true
+
+    # Minimum operational load (hard constraint, fraction of baseline)
+    min_load:
+      "Non-specified (Industry)|Chlor-alkali": 0.70
+
+    # Ramp rate limits
+    ramp_rate:
+      default: 0.1
+      "Iron & steel industry|BF-BOF-CCUS": 0.04
+      "Iron & steel industry|Aluminium-primary": 0.08
+      "Iron & steel industry|Alumina": 0.06
+      "Non-metallic Minerals|Kiln": 0.04
+      "Non-metallic Minerals|Raw mills": 0.2
+      "Non-metallic Minerals|Cement mills": 0.2
+      "Paper, Pulp and Print|Paper machines": 0.1
+      "Non-specified (Industry)|Chlor-alkali": 0.1
+
+  temporal_electricity_industry_load: true
 
 # =============================================================================
 # TRANSMISSION PROJECTS
