@@ -420,6 +420,62 @@ def add_retrofit_gas_boiler_constraint(
     n.model.add_constraints(lhs == rhs, name="gas_retrofit")
 
 
+def add_load_balance_components(n, config, sign=1):
+    """
+    Add load shedding or load sinks to the network with carrier 'load'.
+
+    Parameters
+    ----------
+    n : pypsa.Network
+        The PyPSA network to be modified.
+    config : dict
+        The load shedding or load sinks settings.
+    sign : float
+        Direction of the added generators. Positive for load shedding, negative for load sinks.
+
+    Returns
+    -------
+    None
+        Modifies PyPSA network in place.
+    """
+    if "load" not in n.carriers.index:
+        n.add("Carrier", "load")
+
+    carriers = config.get("carriers", {})
+    default_cost = config.get("default_cost")
+    balance_comp = "shedding" if sign > 0 else "sink"
+
+    logger.info(
+        f"Add load {balance_comp} for {'all carriers' if config.get('all_carriers') else ', '.join(carriers)}."
+    )
+
+    for bus_carrier, price in carriers.items():
+        buses_i = n.buses[n.buses.carrier == bus_carrier].index
+        n.add(
+            "Generator",
+            buses_i,
+            f" load {balance_comp}",
+            bus=buses_i,
+            carrier="load",
+            marginal_cost=price,
+            p_nom=np.inf,
+            sign=sign,
+        )
+
+    if config.get("all_carriers", False):
+        buses_rest_i = n.buses[~n.buses.carrier.isin(carriers)].index
+        n.add(
+            "Generator",
+            buses_rest_i,
+            f" load {balance_comp}",
+            bus=buses_rest_i,
+            carrier="load",
+            marginal_cost=default_cost,
+            p_nom=np.inf,
+            sign=sign,
+        )
+
+
 def prepare_network(
     n: pypsa.Network,
     solve_opts: dict,
@@ -427,6 +483,7 @@ def prepare_network(
     planning_horizons: str | None,
     co2_sequestration_potential: dict[str, float],
     limit_max_growth: dict[str, Any] | None = None,
+    rolling_horizon: bool = False,
 ) -> None:
     """
     Prepare network with various constraints and modifications.
@@ -459,23 +516,13 @@ def prepare_network(
         ):
             df.where(df.abs() > solve_opts["clip_p_max_pu"], other=0.0, inplace=True)
 
-    if load_shedding := solve_opts.get("load_shedding"):
+    if (load_shedding := solve_opts.get("load_shedding", {})).get("enable", False):
         # intersect between macroeconomic and surveybased willingness to pay
         # http://journal.frontiersin.org/article/10.3389/fenrg.2015.00055/full
-        n.add("Carrier", "load")
-        buses_i = n.buses.index
-        if isinstance(load_shedding, bool):
-            load_shedding = 1e5  # Eur/MWh
+        add_load_balance_components(n, load_shedding)
 
-        n.add(
-            "Generator",
-            buses_i,
-            " load",
-            bus=buses_i,
-            carrier="load",
-            marginal_cost=load_shedding,  # Eur/MWh
-            p_nom=np.inf,
-        )
+    if (load_sinks := solve_opts.get("load_sinks", {})).get("enable", False):
+        add_load_balance_components(n, load_sinks, sign=-1)
 
     if solve_opts.get("curtailment_mode"):
         n.add("Carrier", "curtailment", color="#fedfed", nice_name="Curtailment")
@@ -494,18 +541,20 @@ def prepare_network(
         )
 
     if solve_opts.get("noisy_costs"):
-        for t in n.iterate_components():
-            # if 'capital_cost' in t.df:
-            #    t.df['capital_cost'] += 1e1 + 2.*(np.random.random(len(t.df)) - 0.5)
-            if "marginal_cost" in t.df:
-                t.df["marginal_cost"] += 1e-2 + 2e-3 * (
-                    np.random.random(len(t.df)) - 0.5
+        for t in n.components:
+            # if 'capital_cost' in t.static:
+            #    t.static['capital_cost'] += 1e1 + 2.*(np.random.random(len(t.static)) - 0.5)
+            if "marginal_cost" in t.static:
+                t.static["marginal_cost"] += 1e-2 + 2e-3 * (
+                    np.random.random(len(t.static)) - 0.5
                 )
 
-        for t in n.iterate_components(["Line", "Link"]):
-            t.df["capital_cost"] += (
-                1e-1 + 2e-2 * (np.random.random(len(t.df)) - 0.5)
-            ) * t.df["length"]
+        for t in n.components[["Line", "Link"]]:
+            if t.static.empty:
+                continue
+            t.static["capital_cost"] += (
+                1e-1 + 2e-2 * (np.random.random(len(t.static)) - 0.5)
+            ) * t.static["length"]
 
     if solve_opts.get("nhours"):
         nhours = solve_opts["nhours"]
@@ -525,6 +574,13 @@ def prepare_network(
         add_co2_sequestration_limit(
             n, limit_dict=limit_dict, planning_horizons=planning_horizons
         )
+
+    # rolling horizon disables cyclic storage
+    if rolling_horizon:
+        n.storage_units.state_of_charge_cyclic = False
+        n.storage_units.state_of_charge_initial = 0
+        n.stores.e_cyclic = False
+        n.stores.e_initial = 0
 
 
 def add_CCL_constraints(
@@ -999,7 +1055,7 @@ def add_lossy_bidirectional_link_constraints(n):
 
     carriers = n.links.loc[n.links.reversed, "carrier"].unique()  # noqa: F841
     backwards = n.links.query(
-        "carrier in @carriers and p_nom_extendable and reversed"
+        "carrier in @carriers and p_nom_extendable and reversed and active"
     ).index
     forwards = backwards.str.replace("-reversed", "")
     lhs = n.model["Link-p_nom"].loc[backwards]
@@ -1068,10 +1124,10 @@ def add_pipe_retrofit_constraint(n):
     if "reversed" not in n.links.columns:
         n.links["reversed"] = False
     gas_pipes_i = n.links.query(
-        "carrier == 'gas pipeline' and p_nom_extendable and ~reversed"
+        "carrier == 'gas pipeline' and p_nom_extendable and ~reversed and active"
     ).index
     h2_retrofitted_i = n.links.query(
-        "carrier == 'H2 pipeline retrofitted' and p_nom_extendable and ~reversed"
+        "carrier == 'H2 pipeline retrofitted' and p_nom_extendable and ~reversed and active"
     ).index
 
     if h2_retrofitted_i.empty or gas_pipes_i.empty:
@@ -1165,12 +1221,12 @@ def add_co2_atmosphere_constraint(n, snapshots):
 def add_dri_h2_coupling_constraint(n: pypsa.Network, snapshots: pd.DatetimeIndex) -> None:
     """
     Add coupling constraint between DRI DSR flexibility and H2 storage capacity.
-    
+
     H2-DRI-EAF flexibility requires H2 storage to enable load shifting. This constraint
     limits DRI load shifting based on available H2 storage capacity.
-    
+
     Constraint: |DRI_DSR_dispatch| ≤ H2_storage_capacity / H2_per_DRI_ratio
-    
+
     Parameters
     ----------
     n : pypsa.Network
@@ -1183,7 +1239,7 @@ def add_dri_h2_coupling_constraint(n: pypsa.Network, snapshots: pd.DatetimeIndex
     dsr_config = industry_config.get("dsr", {})
     if not dsr_config.get("enable", False):
         return
-    
+
     # Get H2/DRI ratio from config (MWh_H2 per ton steel, or MWh_H2 per MWh_DRI)
     # H2_DRI: 1.7 is MWh_H2 per ton steel
     # We need to convert to MWh_H2 per MWh_DRI electricity
@@ -1191,66 +1247,66 @@ def add_dri_h2_coupling_constraint(n: pypsa.Network, snapshots: pd.DatetimeIndex
     # So: MWh_H2 per MWh_el = H2_DRI / elec_DRI = 1.7 / 0.322 ≈ 5.28
     h2_dri_ratio = industry_config.get("H2_DRI", 1.7)
     elec_dri_ratio = industry_config.get("elec_DRI", 0.322)
-    
+
     if elec_dri_ratio == 0:
         logger.warning(
             "elec_DRI is 0, cannot calculate H2_per_DRI_electricity_ratio for coupling constraint. "
             "Skipping H2-DRI coupling constraint. DRI flexibility may be overestimated."
         )
         return
-    
+
     h2_per_dri_elec = h2_dri_ratio / elec_dri_ratio  # MWh_H2 per MWh_DRI_electricity
-    
+
     # Find DRI DSR stores (those with "H2-DRI-EAF" in the name)
     industry_dsr_stores = n.stores[n.stores.carrier == "industry dsr"]
     dri_stores = industry_dsr_stores[industry_dsr_stores.index.str.contains("H2-DRI-EAF", case=False, na=False)]
-    
+
     if dri_stores.empty:
         return  # No DRI stores, nothing to constrain
-    
+
     # Find H2 storage stores
     h2_stores = n.stores[n.stores.carrier == "H2 Store"]
-    
+
     if h2_stores.empty:
         logger.warning("H2-DRI-EAF DSR stores found but no H2 storage available. DRI flexibility may be overestimated.")
         return
-    
+
     # Get the model variables (only if model exists)
     if not hasattr(n, "model") or n.model is None:
         return
-    
+
     # Create mapping: DRI store bus -> H2 store
     # DRI stores are on "low voltage" buses, need to find corresponding H2 bus
     dri_store_to_h2_store = {}
-    
+
     for dri_store_name in dri_stores.index:
         # Extract node name from store name (e.g., "BE0 0 industry dsr Iron & steel industry H2-DRI-EAF" -> "BE0 0")
         node_name = dri_store_name.split(" industry dsr ")[0]
-        
+
         # Find H2 store at the same node
         h2_bus = f"{node_name} H2"
         h2_store_at_node = h2_stores[h2_stores.bus == h2_bus]
-        
+
         if not h2_store_at_node.empty:
             # Use the first H2 store at this node (there should typically be one)
             h2_store_name = h2_store_at_node.index[0]
             dri_store_to_h2_store[dri_store_name] = h2_store_name
         else:
             logger.debug(f"No H2 storage found for DRI store {dri_store_name} at bus {h2_bus}")
-    
+
     if not dri_store_to_h2_store:
         logger.warning("No H2 storage found for any DRI DSR stores. DRI flexibility may be overestimated.")
         return
-    
+
     # Add constraints for each DRI store
     store_p = n.model["Store-p"]  # Store dispatch (power)
-    
+
     constraints_added = 0
     for dri_store_name, h2_store_name in dri_store_to_h2_store.items():
         # Get H2 storage capacity (nominal energy capacity)
         h2_store_e_nom = n.stores.loc[h2_store_name, "e_nom"]
         h2_store_extendable = n.stores.loc[h2_store_name, "e_nom_extendable"]
-        
+
         if h2_store_extendable:
             # For extendable stores, use the model variable
             # This allows the optimizer to build H2 storage to enable DRI flexibility
@@ -1264,32 +1320,32 @@ def add_dri_h2_coupling_constraint(n: pypsa.Network, snapshots: pd.DatetimeIndex
         else:
             # For fixed capacity, use the nominal value
             max_dri_shift = h2_store_e_nom / h2_per_dri_elec
-        
+
         # Constraint: |DRI dispatch| ≤ max_dri_shift
         # This limits both positive (charge) and negative (discharge) dispatch
         dri_dispatch = store_p.loc[:, dri_store_name]
-        
+
         # Add upper bound: DRI dispatch ≤ max_dri_shift
         n.model.add_constraints(
             dri_dispatch <= max_dri_shift,
             name=f"DRI_H2_coupling_upper_{dri_store_name}"
         )
-        
+
         # Add lower bound: DRI dispatch ≥ -max_dri_shift
         n.model.add_constraints(
             dri_dispatch >= -max_dri_shift,
             name=f"DRI_H2_coupling_lower_{dri_store_name}"
         )
-        
+
         constraints_added += 1
-    
+
     if constraints_added > 0:
         logger.info(f"Added H2 storage coupling constraints for {constraints_added} DRI DSR stores (H2/DRI ratio: {h2_per_dri_elec:.2f} MWh_H2/MWh_el)")
 
 
 def _extract_tech_key(link_name):
     """Extract technology key from a DSR link name.
-    
+
     e.g. "BE0 0 industry dsr Iron & steel industry Scrap-EAF charge"
       -> "Iron & steel industry|Scrap-EAF"
     """
@@ -1305,7 +1361,7 @@ def _extract_tech_key(link_name):
 
 def _filter_links_with_ramp_config(link_names, ramp_rate_config):
     """Filter links to only those with an explicit ramp_rate entry in config.
-    
+
     Returns the filtered link index and a Series of ramp rates for those links.
     Technologies not listed in ramp_rate config are considered flexible enough
     to not need ramp constraints at the model's temporal resolution.
@@ -1313,10 +1369,10 @@ def _filter_links_with_ramp_config(link_names, ramp_rate_config):
     filtered = []
     rates = {}
     default_rate = ramp_rate_config.get("default", 0.1)
-    
+
     # Keys in config that are actual technology entries (not 'default')
     tech_keys_in_config = {k for k in ramp_rate_config if k != "default"}
-    
+
     for link_name in link_names:
         tech_key = _extract_tech_key(link_name)
         if tech_key is not None and tech_key in tech_keys_in_config:
@@ -1326,7 +1382,7 @@ def _filter_links_with_ramp_config(link_names, ramp_rate_config):
             # Profile-level link (no technology breakdown) - apply default
             filtered.append(link_name)
             rates[link_name] = default_rate
-    
+
     filtered_idx = pd.Index(filtered)
     rate_series = pd.Series(rates)
     return filtered_idx, rate_series
@@ -1335,16 +1391,16 @@ def _filter_links_with_ramp_config(link_names, ramp_rate_config):
 def add_dsr_ramp_constraints(n: pypsa.Network, snapshots: pd.DatetimeIndex, dsr_config: dict) -> None:
     """
     Add ramp rate constraints for physically rigid DSR technologies.
-    
+
     VECTORIZED implementation using linopy/xarray array operations.
     Only applies to technologies explicitly listed in config ramp_rate section.
     Flexible technologies (e.g. EAF, secondary aluminium) are excluded because
     they can physically adjust within a single timestep.
-    
+
     Constraints:
         link_p[t] - link_p[t-1] <= +max_ramp   (ramp up limit)
         link_p[t] - link_p[t-1] >= -max_ramp   (ramp down limit)
-    
+
     Parameters
     ----------
     n : pypsa.Network
@@ -1358,21 +1414,21 @@ def add_dsr_ramp_constraints(n: pypsa.Network, snapshots: pd.DatetimeIndex, dsr_
     if not ramp_rate_config:
         logger.info("No ramp_rate section in DSR config, skipping ramp constraints")
         return
-    
+
     # Find all DSR links
     all_charge = n.links.index[n.links.carrier == "industry dsr charge"]
     all_discharge = n.links.index[n.links.carrier == "industry dsr discharge"]
-    
+
     if all_charge.empty and all_discharge.empty:
         return
-    
+
     if not hasattr(n, "model") or n.model is None:
         return
-    
+
     # Filter to only rigid technologies with explicit ramp rates
     charge_links, charge_rates = _filter_links_with_ramp_config(all_charge, ramp_rate_config)
     discharge_links, discharge_rates = _filter_links_with_ramp_config(all_discharge, ramp_rate_config)
-    
+
     n_skipped_charge = len(all_charge) - len(charge_links)
     n_skipped_discharge = len(all_discharge) - len(discharge_links)
     if n_skipped_charge > 0 or n_skipped_discharge > 0:
@@ -1380,56 +1436,56 @@ def add_dsr_ramp_constraints(n: pypsa.Network, snapshots: pd.DatetimeIndex, dsr_
             f"  Ramp constraints: skipping {n_skipped_charge} flexible charge links "
             f"and {n_skipped_discharge} flexible discharge links (no explicit ramp_rate)"
         )
-    
+
     if charge_links.empty and discharge_links.empty:
         logger.info("No rigid technologies found for ramp constraints")
         return
-    
+
     link_p = n.model["Link-p"]
     constraints_added = 0
-    
+
     # --- Vectorized ramp constraints for CHARGE links (rigid technologies only) ---
     if not charge_links.empty:
         max_ramp_charge = n.links.loc[charge_links, "p_nom"] * charge_rates
-        
+
         charge_dispatch = link_p.sel({"name": charge_links})
         charge_ramp = charge_dispatch.diff("snapshot")
         max_ramp_charge_da = xr.DataArray(
             max_ramp_charge.values, dims=["name"], coords={"name": charge_links}
         )
-        
+
         n.model.add_constraints(
             charge_ramp <= max_ramp_charge_da, name="DSR_charge_ramp_up"
         )
         n.model.add_constraints(
             charge_ramp >= -max_ramp_charge_da, name="DSR_charge_ramp_down"
         )
-        
+
         n_charge = len(charge_links) * (len(snapshots) - 1) * 2
         constraints_added += n_charge
         logger.info(f"  Charge ramp constraints: {n_charge} for {len(charge_links)} rigid links")
-    
+
     # --- Vectorized ramp constraints for DISCHARGE links (rigid technologies only) ---
     if not discharge_links.empty:
         max_ramp_discharge = n.links.loc[discharge_links, "p_nom"] * discharge_rates
-        
+
         discharge_dispatch = link_p.sel({"name": discharge_links})
         discharge_ramp = discharge_dispatch.diff("snapshot")
         max_ramp_discharge_da = xr.DataArray(
             max_ramp_discharge.values, dims=["name"], coords={"name": discharge_links}
         )
-        
+
         n.model.add_constraints(
             discharge_ramp <= max_ramp_discharge_da, name="DSR_discharge_ramp_up"
         )
         n.model.add_constraints(
             discharge_ramp >= -max_ramp_discharge_da, name="DSR_discharge_ramp_down"
         )
-        
+
         n_discharge = len(discharge_links) * (len(snapshots) - 1) * 2
         constraints_added += n_discharge
         logger.info(f"  Discharge ramp constraints: {n_discharge} for {len(discharge_links)} rigid links")
-    
+
     if constraints_added > 0:
         logger.info(f"Added DSR ramp constraints: {constraints_added} total (vectorized, 4 bulk calls)")
 
@@ -1487,7 +1543,7 @@ def extra_functionality(
         # Store-link coupling constraint removed: redundant with PyPSA's bus balance (KCL).
         # See DSR_DEEP_ANALYSIS_AND_FIX.md for details.
         add_dsr_ramp_constraints(n, snapshots, dsr_config)
-    
+
     if n.config.get("sector", {}).get("tes", False):
         if n.buses.index.str.contains(
             r"urban central heat|urban decentral heat|rural heat",
@@ -1638,6 +1694,7 @@ def collect_kwargs(
 
         if cf_solving["post_discretization"].get("enable", False):
             logger.info("Add post-discretization parameters.")
+            cf_solving["post_discretization"].pop("enable", None)
             all_kwargs.update(cf_solving["post_discretization"])
 
         return all_kwargs, {}
@@ -1722,6 +1779,7 @@ if __name__ == "__main__":
         planning_horizons=planning_horizons,
         co2_sequestration_potential=snakemake.params["co2_sequestration_potential"],
         limit_max_growth=snakemake.params.get("sector", {}).get("limit_max_growth"),
+        rolling_horizon=cf_solving["rolling_horizon"],
     )
 
     # Determine solve mode
@@ -1740,7 +1798,7 @@ if __name__ == "__main__":
     with memory_logger(
         filename=getattr(snakemake.log, "memory", None), interval=logging_frequency
     ) as mem:
-        if rolling_horizon and snakemake.rule == "solve_operations_network":
+        if rolling_horizon:
             logger.info("Using rolling horizon optimization...")
             all_kwargs, _ = collect_kwargs(
                 snakemake.config,
@@ -1820,6 +1878,9 @@ if __name__ == "__main__":
 
     n.meta = dict(snakemake.config, **dict(wildcards=dict(snakemake.wildcards)))
     n.export_to_netcdf(snakemake.output.network)
+
+    if snakemake.output.get("model"):
+        n.model.to_netcdf(snakemake.output.model)
 
     with open(snakemake.output.config, "w") as file:
         yaml.dump(
