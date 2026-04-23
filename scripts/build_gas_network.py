@@ -53,20 +53,16 @@ def diameter_to_capacity(pipe_diameter_mm):
         return a3 + m3 * pipe_diameter_mm
 
 
+def unnest_struct(s):
+    if isinstance(s.iloc[0], str):
+        s = s.apply(json.loads)
+    return s.apply(pd.Series)
+
+
 def load_dataset(fn):
     df = gpd.read_file(fn)
-    # Fix: geopandas may auto-parse JSON fields, check if already parsed
-    if df.param.dtype == object and len(df.param) > 0 and isinstance(df.param.iloc[0], str):
-        param = df.param.apply(json.loads).apply(pd.Series)
-    else:
-        param = df.param.apply(pd.Series)
-    
-    cols = ["diameter_mm", "max_cap_M_m3_per_d"]
-    if df.method.dtype == object and len(df.method) > 0 and isinstance(df.method.iloc[0], str):
-        method = df.method.apply(json.loads).apply(pd.Series)[cols]
-    else:
-        method = df.method.apply(pd.Series)[cols]
-    
+    param = unnest_struct(df.param)
+    method = unnest_struct(df.method)[["diameter_mm", "max_cap_M_m3_per_d"]]
     method.columns = method.columns + "_method"
     df = pd.concat([df, param, method], axis=1)
     to_drop = ["param", "uncertainty", "method", "tags"]

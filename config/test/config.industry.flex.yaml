@@ -18,9 +18,6 @@ scenario:
 countries:
 - BE
 
-enable:
-  retrieve: true
-
 clustering:
   temporal:
     resolution_sector: 6h

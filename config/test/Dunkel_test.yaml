@@ -9,10 +9,6 @@ run:
     policy: false
   shared_cutouts: true
 
-enable:
-  retrieve: true
-
-
 scenario:
   clusters:
   - 10
