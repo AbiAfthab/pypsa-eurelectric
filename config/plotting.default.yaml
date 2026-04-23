@@ -387,6 +387,9 @@ plotting:
     electricity: '#110d63'
     industry electricity: '#2d2a66'
     industry new electricity: '#2d2a66'
+    industry dsr: "#0f4c5c"
+    industry dsr charge: "#6e6e6e"
+    industry dsr discharge: "#5c5c5c"
     agriculture electricity: '#494778'
     # battery + EVs
     battery: '#ace37f'
