@@ -100,3 +100,10 @@ CLAUDE.local.md
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+uploaded_networks/
+
+.pythonlibs/
+Miniconda3-latest-Linux-x86_64.sh
+checkpoint_certificate.pem
+*.lp
