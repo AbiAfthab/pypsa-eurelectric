@@ -6,7 +6,7 @@ rule add_data_centers:
     message:
         "Building data center list for {wildcards.clusters} clusters"
     params:
-        data_centers=config_provider("data_centers"),
+        data_center=config_provider("data_center"),
     input:
         network=resources("networks/base_s_{clusters}.nc"),
         data_center_demand="resources/eurelectric_data_centers/dc_loads.csv",

@@ -76,7 +76,7 @@ class _DataCenterStorageConfig(ConfigModel):
     )
 
 class DataCenterConfigSection(BaseModel):
-    data_center_field: str = Field("data_center")
+    dsr: bool = Field(True)
 
 class DataCenterEurelectricConfigUpdater(ConfigUpdater):
     """Config updater for Eurelectric industry configuration options.
@@ -100,20 +100,16 @@ class DataCenterEurelectricConfigUpdater(ConfigUpdater):
     def update(self):
         """Apply Eurelectric-specific schema extensions for industry DSR."""
 
-        # Extend DataCenterConfig with DSR and temporal load option
-        data_center_config_field = self.base_config.model_fields["industry"]
-        DataCenterConfigClass = data_center_config_field.default_factory().__class__
+        # # Extend DataCenterConfig with DSR and temporal load option
+        # data_center_config_field = self.base_config.model_fields["industry"]
+        # DataCenterConfigClass = data_center_config_field.default_factory().__class__
 
         ExtendedDataCenterConfig = self._apply_updates(
-            __base__=DataCenterConfigClass,
-            new_section=(
-                DataCenterConfigSection, 
-                Field(default_factory=DataCenterConfigSection)
-            ),
+            __base__=DataCenterConfigSection,
         )
 
         ExtendedDataCenterConfig = self._apply_updates(
-            __base__=DataCenterConfigClass,
+            __base__=DataCenterConfigSection,
             __doc__="Configuration for `data center` settings with Eurelectric DSR extensions.",
             dsr=(
                 _DataCenterDSRConfig,
@@ -136,7 +132,7 @@ class DataCenterEurelectricConfigUpdater(ConfigUpdater):
                     description="Data center on site storage config"
                 ),
             ),
-            enable_dc_to_grid=(
+            dc_to_grid=(
                 bool,
                 Field(
                     True,

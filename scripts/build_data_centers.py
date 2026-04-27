@@ -6,18 +6,26 @@ This rule adds a set of pypsa components representative of a data center with de
 flexibility.
 """
 
-ENABLE_DC2G = True
 
 import logging
 
 import numpy as np
 import pandas as pd
 
+import pypsa
+
 from scripts._helpers import configure_logging, get_snapshots, set_scenario_config
 
 logger = logging.getLogger(__name__)
 
-def attach_data_centers(n, load_fn):
+def attach_data_centers(
+        n, 
+        load_fn, 
+        generation, 
+        storage, 
+        dc_to_grid, 
+        dsr
+    ):
     
     # all low voltage/distribution connections
     buses = n.buses[n.buses.index.str.contains('low voltage')].index
@@ -38,26 +46,31 @@ def attach_data_centers(n, load_fn):
         bus0=buses, 
         bus1=data_center_sites, 
         p_nom=1e8,
-        p_min_pu=-1*ENABLE_DC2G, 
+        p_min_pu=-1*dc_to_grid, 
         p_max_pu=1
     )
+
+    if storage['enable']:
+        # add onsite storage
+        n.add(
+            "Store", 
+            name=buses, 
+            suffix=" data center store", 
+            bus=buses,
+            e_nom=['e_nom_pu'] * 100,
+            p_nom=['p_nom_pu'] * 100,
+        )
     
-    # add onsite storage
-    n.add(
-        "Store", 
-        name=buses, 
-        suffix=" data center store", 
-        bus=buses
-    )
-    
-    # add onsite generation
-    n.add(
-        "Link", 
-        name=buses, 
-        suffix=" data center", 
-        bus0=buses, 
-        bus1="EU gas"
-    )
+    if generation['enable']:
+        # add onsite generation
+        n.add(
+            "Link", 
+            name=buses, 
+            suffix=" data center", 
+            bus0=buses, 
+            bus1="EU gas",
+            p_nom=generation['p_nom_pu'] * 100, #TODO fix
+        )
 
     # add second bus to constrain the demand (including any feedback from DSR) to be positive
     n.add(
@@ -89,20 +102,22 @@ def attach_data_centers(n, load_fn):
         p_set=load.values
     )
 
-    n.add(
-        "Store",
-        name=data_center_demand_buses,
-        suffix=' (DSR)',
-        bus=data_center_demand_buses,
-        e_cyclic=True,
-        e_nom=load.max() * 0.05 # some arbitrary % of the max demand 
-    )
+    if dsr['enable']:
+        n.add(
+            "Store",
+            name=data_center_demand_buses,
+            suffix=' (DSR)',
+            bus=data_center_demand_buses,
+            e_cyclic=True,
+            e_nom=load.max(axis=1) * dsr['flexibility_fraction'] * dsr['shift_hours'] # some arbitrary % of the max demand 
+        )
 
     return n
 
 
 if __name__ == "__main__":
-    if "snakemake" not in globals():
+    # if "snakemake" not in globals():
+    if True:
         from scripts._helpers import mock_snakemake
 
         snakemake = mock_snakemake("add_data_centers", clusters=50)
@@ -111,7 +126,7 @@ if __name__ == "__main__":
     set_scenario_config(snakemake)
 
     n = pypsa.Network("resources/networks/base_s_50___2050.nc")
-    n = attach_data_centers(n, "resources/dc_loads.csv")
+    n = attach_data_centers(n, "resources/eurelectric_data_centers/dc_loads.csv", **snakemake.params.data_center)
 
     n.export_to_netcdf(snakemake.output[0])
 
