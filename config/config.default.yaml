@@ -85,7 +85,7 @@ countries:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#snapshots
 snapshots:
   start: "2013-01-01"
-  end: "2014-01-01"
+  end: "2013-03-01"
   inclusive: left
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#enable
@@ -1138,7 +1138,7 @@ clustering:
     buses: {}
   temporal:
     resolution_elec: false
-    resolution_sector: false
+    resolution_sector: 3H
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#adjustments
 adjustments:
@@ -1488,3 +1488,20 @@ overpass_api:
     project_name: "PyPSA-Eur"
     email: "contact@pypsa.org"
     website: "https://github.com/PyPSA/pypsa-eur"
+
+# docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#data_center
+data_center:
+  dsr:
+    enable: false
+    store_capital_cost: 5.0
+    flexibility_fraction: 0.0
+    shift_hours: 6
+    min_load: 0.8
+  generation:
+    enable: false
+    p_nom_pu: 0.2
+  storage:
+    enable: false
+    p_nom_pu: 0.2
+    e_nom_pu: 0.2
+  dc_to_grid: true

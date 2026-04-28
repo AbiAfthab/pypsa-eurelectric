@@ -35,7 +35,9 @@ def attach_data_centers(
         "Bus", 
         name=buses, 
         suffix=" data center site", 
-        carrier="DC"
+        carrier="low voltage",
+        location=buses,
+        unit='MWh_el'
     )
     data_center_sites = n.buses[n.buses.index.str.contains('data center site')].index
     
@@ -77,7 +79,9 @@ def attach_data_centers(
         "Bus", 
         name=buses, 
         suffix=" data center demand", 
-        carrier="DC"
+        carrier="low voltage",
+        location=buses,
+        unit='MWh_el'
     )
     data_center_demand_buses = n.buses[n.buses.index.str.contains('data center demand')].index
 
@@ -114,7 +118,6 @@ def attach_data_centers(
 
     return n
 
-
 if __name__ == "__main__":
     # if "snakemake" not in globals():
     if True:
@@ -125,7 +128,7 @@ if __name__ == "__main__":
     configure_logging(snakemake)
     set_scenario_config(snakemake)
 
-    n = pypsa.Network("resources/networks/base_s_50___2050.nc")
+    n = pypsa.Network(snakemake.input['network'])
     n = attach_data_centers(n, "resources/eurelectric_data_centers/dc_loads.csv", **snakemake.params.data_center)
 
     n.export_to_netcdf(snakemake.output[0])
