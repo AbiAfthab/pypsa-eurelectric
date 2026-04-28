@@ -130,6 +130,6 @@ if __name__ == "__main__":
 
     n = pypsa.Network(snakemake.input['network'])
     n = attach_data_centers(n, "resources/eurelectric_data_centers/dc_loads.csv", **snakemake.params.data_center)
-
+    n.links.reversed=False
     n.export_to_netcdf(snakemake.output[0])
 
