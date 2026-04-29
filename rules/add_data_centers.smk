@@ -2,14 +2,16 @@
 #
 # SPDX-License-Identifier: MIT
 
+# build out data centers analogous to the transport demand rules
+# johannes to provide the osm data in the form of a list 
 rule add_data_centers:
     message:
-        "Building data center list for  clusters and planning horizon "
+        "Building data center list for clusters and planning horizon "
     params:
         data_center=config_provider("data_center"),
     input:
         network=resources("networks/base_s_50___2050.nc"),
-        data_center_demand="resources/eurelectric_data_centers/dc_loads.csv",
+        data_center_demand="resources/eurelectric_data_centers/data_center_data.csv",
     output:
         network=resources("networks/base_s_50___2050_dc.nc"),
     log:
@@ -20,7 +22,7 @@ rule add_data_centers:
     resources:
         mem_mb=7000,
     script:
-        scripts("build_data_centers.py")
+        scripts("eurelectric/add_data_centers.py")
 
 rule solve_network_data_center:
     message:
@@ -58,3 +60,24 @@ rule solve_network_data_center:
         shadow_config
     script:
         scripts("solve_network.py")
+
+rule retrieve_data_center_demand_profiles:
+    message:
+        "Retrieving data center half hourly demand profiles from UKPN"
+    input:
+        xlsx=storage("https://ukpowernetworks.opendatasoft.com/api/explore/v2.1/catalog/datasets/ukpn-data-centre-demand-profiles/attachments/data_triage_data_centre_profiles_half_hourly_xlsx")
+    output:
+        xlsx=resources("eurelectric_data_centers/load_profiles_half_hourly.xlsx")
+    run:
+        copy2(input['xlsx'], output['xlsx'])
+
+rule build_data_center_demand:
+    message:
+        "Creating a nodal distribution of data center demand (annualized)"
+    input:
+        data_center_demand=resources('eurelectric_data_centers/data_center_data.csv'),
+        clustered_pop_layout=resources("pop_layout_base_s_{clusters}.csv"),
+    output:
+        data_center_demand=resources('eurelectric_data_centers/data_center_demand_s_{clusters}.csv')
+    script:
+        scripts('eurelectric/build_data_center_profiles.py')
