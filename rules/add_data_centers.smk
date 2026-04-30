@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 # build out data centers analogous to the transport demand rules
-# johannes to provide the osm data in the form of a list 
 rule add_data_centers:
     message:
         "Building data center list for clusters and planning horizon "
@@ -11,7 +10,8 @@ rule add_data_centers:
         data_center=config_provider("data_center"),
     input:
         network=resources("networks/base_s_50___2050.nc"),
-        data_center_demand="resources/eurelectric_data_centers/data_center_data.csv",
+        data_center_nodal_demand="resources/eurelectric_data_centers/data_center_demand_s_50.csv",
+        data_center_demand_profile="data/eurelectric_data_centers/low-voltage-data-center-profile.csv"
     output:
         network=resources("networks/base_s_50___2050_dc.nc"),
     log:
@@ -61,15 +61,15 @@ rule solve_network_data_center:
     script:
         scripts("solve_network.py")
 
-rule retrieve_data_center_demand_profiles:
-    message:
-        "Retrieving data center half hourly demand profiles from UKPN"
-    input:
-        xlsx=storage("https://ukpowernetworks.opendatasoft.com/api/explore/v2.1/catalog/datasets/ukpn-data-centre-demand-profiles/attachments/data_triage_data_centre_profiles_half_hourly_xlsx")
-    output:
-        xlsx=resources("eurelectric_data_centers/load_profiles_half_hourly.xlsx")
-    run:
-        copy2(input['xlsx'], output['xlsx'])
+# rule retrieve_data_center_demand_profiles:
+#     message:
+#         "Retrieving data center half hourly demand profiles from UKPN"
+#     input:
+#         xlsx=storage("https://ukpowernetworks.opendatasoft.com/api/explore/v2.1/catalog/datasets/ukpn-data-centre-demand-profiles/attachments/data_triage_data_centre_profiles_half_hourly_xlsx")
+#     output:
+#         xlsx="data/eurelectric_data_centers/load_profiles_half_hourly.xlsx"
+#     run:
+#         copy2(input['xlsx'], output['xlsx'])
 
 rule build_data_center_demand:
     message:
