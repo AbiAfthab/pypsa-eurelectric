@@ -5,6 +5,17 @@
 This rule creates load profiles for data centers across Europe by scaling the demand profile provided by UKPN
 """
 
+import logging
+
+import numpy as np
+import pandas as pd
+
+import pypsa
+
+from scripts._helpers import configure_logging, get_snapshots, set_scenario_config
+
+logger = logging.getLogger(__name__)
+
 def build_nodal_data_center_demand(scalar_fn, pop_layout):
     # reset scaling factors against GB 
     demand_per_ct = pd.read_csv(scalar_fn, index_col=[1])

@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 
 def attach_data_centers(
         n, 
-        load_fn, 
+        load_nodal_distribution_fn,
+        load_profile_fn,
         generation, 
         storage, 
         dc_to_grid, 
@@ -97,15 +98,26 @@ def attach_data_centers(
         p_nom=np.inf
     )
 
+
+    load_profile_fn = "data/eurelectric_data_centers/low-voltage-data-center-profile.csv"
+    load_nodal_distribution_fn = "resources/eurelectric_data_centers/data_center_demand_s_50.csv"
     # add baseline demand and assign loads
-    load = pd.read_csv(load_fn) # TODO replace with OSM generated data 
-    load = load.drop(load.filter(regex='Unnamed').columns, axis=1)
-    load.set_index('snapshot', inplace=True)
+    profile = pd.read_csv(load_profile_fn)
+    profile.set_index('utc_timestamp', inplace=True)
+    nodal_distribution = pd.read_csv(load_nodal_distribution_fn)
+    
+    nodal_distribution.set_index('name', inplace=True)
+    nodal_distribution = nodal_distribution.T
+    nodal_distribution.index = ['0']
+    load = profile.dot(nodal_distribution)
+    load.index =  pd.to_datetime(load.index) - pd.offsets.DateOffset(years=10)
+    load = load.loc[n.snapshots]
+    gb_assumed_capacity = 2.2e3 # 2.2GW estimated
     n.add(
         "Load", 
         name=data_center_demand_buses, 
         bus=data_center_demand_buses, 
-        p_set=load.values
+        p_set=load.values * gb_assumed_capacity
     )
 
     if dsr['enable']:
@@ -131,7 +143,7 @@ if __name__ == "__main__":
     set_scenario_config(snakemake)
 
     n = pypsa.Network(snakemake.input['network'])
-    n = attach_data_centers(n, "resources/eurelectric_data_centers/dc_loads.csv", **snakemake.params.data_center)
+    n = attach_data_centers(n, snakemake.input['data_center_nodal_demand'], snakemake.input['data_center_demand_profile'], **snakemake.params.data_center)
     n.links.reversed=False
     n.export_to_netcdf(snakemake.output[0])
 
