@@ -121,13 +121,14 @@ def attach_data_centers(
     )
 
     if dsr['enable']:
+        # breakpoint()
         n.add(
             "Store",
             name=data_center_demand_buses,
             suffix=' (DSR)',
             bus=data_center_demand_buses,
             e_cyclic=True,
-            e_nom=load.max(axis=1) * dsr['flexibility_fraction'] * dsr['shift_hours'] # some arbitrary % of the max demand 
+            e_nom=load.max(axis=0).values * dsr['flexibility_fraction'] * dsr['shift_hours'] # some arbitrary % of the max demand 
         )
 
     return n
