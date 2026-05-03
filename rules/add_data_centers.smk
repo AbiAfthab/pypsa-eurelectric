@@ -75,7 +75,7 @@ rule build_data_center_demand:
     message:
         "Creating a nodal distribution of data center demand (annualized)"
     input:
-        data_center_demand=resources('eurelectric_data_centers/data_center_demand.csv'),
+        data_center_demand='data/eurelectric_data_centers/dc-demand.csv',
         clustered_pop_layout=resources("pop_layout_base_s_{clusters}.csv"),
     output:
         data_center_demand=resources('eurelectric_data_centers/data_center_demand_s_{clusters}.csv')

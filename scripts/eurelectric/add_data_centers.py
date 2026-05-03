@@ -31,6 +31,18 @@ def attach_data_centers(
     # all low voltage/distribution connections
     buses = n.buses[n.buses.index.str.contains('low voltage')].index
 
+    # check for nodes where the reported demand is 0
+    # add baseline demand and assign loads
+    profile = pd.read_csv(load_profile_fn)
+    profile.set_index('utc_timestamp', inplace=True)
+    nodal_distribution = pd.read_csv(load_nodal_distribution_fn).set_index('name')
+    
+    load_profile = pd.DataFrame(index=n.snapshots, data={node: np.ones(len(n.snapshots)) for node in nodal_distribution.index})
+    load = nodal_distribution['avg_demand_mw'] * load_profile
+    zero_cols = load.columns[(load == 0).all()]
+    load = load.drop(zero_cols, axis=1)
+    buses = buses[~buses.str.startswith(tuple(zero_cols))]
+    
     # add main bus to contain data center demand
     n.add(
         "Bus", 
@@ -45,7 +57,7 @@ def attach_data_centers(
     n.add(
         "Link", 
         name=data_center_sites, 
-        suffix=' inverter', #TODO change name 
+        suffix=' site link', 
         bus0=buses, 
         bus1=data_center_sites, 
         p_nom=1e8,
@@ -53,28 +65,7 @@ def attach_data_centers(
         p_max_pu=1
     )
 
-    if storage['enable']:
-        # add onsite storage
-        n.add(
-            "Store", 
-            name=buses, 
-            suffix=" data center store", 
-            bus=buses,
-            e_nom=['e_nom_pu'] * 100,
-            p_nom=['p_nom_pu'] * 100,
-        )
     
-    if generation['enable']:
-        # add onsite generation
-        n.add(
-            "Link", 
-            name=buses, 
-            suffix=" data center", 
-            bus0="EU gas", 
-            bus1=buses, 
-            # bus2 co2 atmosphere
-            p_nom=generation['p_nom_pu'] * 100, #TODO fix
-        )
 
     # add second bus to constrain the demand (including any feedback from DSR) to be positive
     n.add(
@@ -93,35 +84,21 @@ def attach_data_centers(
         suffix=' demand link',
         bus0=data_center_sites,
         bus1=data_center_demand_buses,
-        p_min_pu=-1, # TODO change to 0
+        p_min_pu=0,
         p_max_pu=1,
         p_nom=np.inf
     )
 
 
-    load_profile_fn = "data/eurelectric_data_centers/low-voltage-data-center-profile.csv"
-    load_nodal_distribution_fn = "resources/eurelectric_data_centers/data_center_demand_s_50.csv"
-    # add baseline demand and assign loads
-    profile = pd.read_csv(load_profile_fn)
-    profile.set_index('utc_timestamp', inplace=True)
-    nodal_distribution = pd.read_csv(load_nodal_distribution_fn)
     
-    nodal_distribution.set_index('name', inplace=True)
-    nodal_distribution = nodal_distribution.T
-    nodal_distribution.index = ['0']
-    load = profile.dot(nodal_distribution)
-    load.index =  pd.to_datetime(load.index) - pd.offsets.DateOffset(years=10)
-    load = load.loc[n.snapshots]
-    gb_assumed_capacity = 2.2e3 # 2.2GW estimated
     n.add(
         "Load", 
         name=data_center_demand_buses, 
         bus=data_center_demand_buses, 
-        p_set=load.values * gb_assumed_capacity
+        p_set=load.values,
     )
 
     if dsr['enable']:
-        # breakpoint()
         n.add(
             "Store",
             name=data_center_demand_buses,
@@ -129,6 +106,34 @@ def attach_data_centers(
             bus=data_center_demand_buses,
             e_cyclic=True,
             e_nom=load.max(axis=0).values * dsr['flexibility_fraction'] * dsr['shift_hours'] # some arbitrary % of the max demand 
+        )
+
+    # factor of 5 assumes the rated cap of the data center is 5x the max (max utilization ~20%)
+    if storage['enable']:
+        # add onsite storage
+        n.add(
+            "Store", 
+            name=buses, 
+            suffix=" data center store", 
+            bus=buses,
+            e_nom=load.max(axis=0).values * storage['e_nom_pu'] * 5,
+            p_nom=load.max(axis=0).values * storage['p_nom_pu'] * 5,
+        )
+    
+    if generation['enable']:
+        # add onsite generation
+        n.add(
+            "Link", 
+            name=buses, 
+            suffix=" data center OCGT", 
+            bus0="EU gas", 
+            bus1=buses, 
+            efficiency=0.43,
+            bus2='co2 atmosphere',
+            efficiency2=0.198,
+            p_nom=load.max(axis=0).values * storage['p_nom_pu'] * 5, #TODO fix
+            marginal_cost=2.584773,
+            carrier="OCGT"
         )
 
     return n
