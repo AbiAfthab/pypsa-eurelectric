@@ -16,20 +16,24 @@ from scripts._helpers import configure_logging, get_snapshots, set_scenario_conf
 
 logger = logging.getLogger(__name__)
 
-def build_nodal_data_center_demand(country_demand_fn, pop_layout):
-    # reset scaling factors against GB 
+def build_nodal_data_center_demand(
+        country_demand_fn, 
+        pop_layout, 
+    ):
+    
+    # get annual energy consumption per country
     demand_per_ct = pd.read_csv(country_demand_fn, index_col=0)
     demand_per_ct = demand_per_ct.assign(
-        avg_demand_mw = lambda x: x['DC energy demand [TWh], in 2022'] / 8760 * 1e6
+        total_demand_mwh = lambda x: x['DC energy demand [TWh], in 2022'] * 1e6
     )
 
-    logger.warn(f"Missing data center demand for countries: {set(demand_per_ct.index) ^ set(pop_layout.ct)}")
+    logger.warn(f"Missing data center demand for countries: {set(demand_per_ct.index) ^ set(pop_layout.ct)}, setting to zero.")
 
-    nodal_demand = demand_per_ct.reindex(pop_layout.ct).fillna(0.0)
-    nodal_demand.index = pop_layout.index
-    nodal_demand['avg_demand_mw'] = pop_layout['fraction'] * nodal_demand['avg_demand_mw']
-
-    return nodal_demand
+    # TODO: cleanup - derive the total demand directly then average?
+    per_node_demand = demand_per_ct.reindex(pop_layout.ct).fillna(0.0)
+    per_node_demand.index = pop_layout.index
+    per_node_demand['total_demand_mw'] = pop_layout['fraction'] * per_node_demand['total_demand_mwh']
+    return per_node_demand
 
 if __name__ == "__main__":
     # if "snakemake" not in globals():
