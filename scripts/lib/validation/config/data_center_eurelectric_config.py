@@ -16,25 +16,21 @@ class _DataCenterDSRConfig(ConfigModel):
         False,
         description="Enable data center electricity demand-side response modeling. When enabled, adds flexibility stores and links for each data center demand bus.",
     )
-    store_capital_cost: float = Field(
-        5.0,
+    capital_cost: float = Field(
+        0.1,
         description="Capital cost for DSR flexibility stores representing the cost of providing flexibility capacity (EUR/MWh/year). Higher values reduce DSR utilization.",
     )
-    # link_capital_cost: float = Field(
-    #     0.0,
-    #     description="Capital cost for DSR links connecting loads to flexibility stores (EUR/MW/year). Usually set to 0 as the flexibility cost is captured in store_capital_cost.",
-    # )
-    flexibility_fraction: float = Field(
-        0.0,
-        description="Fraction of load that can participate in DSR, keyed by 'profile|technology' (e.g., 'Iron & steel industry|Scrap-EAF': 0.85). Values should be between 0 and 1. Technologies not listed are assumed to have zero flexibility.",
+    marginal_cost: float = Field(
+        0.1,
+        description="Cost of dispatching DSR (EUR/MWh)."
+    )
+    p_pct_nom: float = Field(
+        0.05,
+        description="Fraction of nominal load capacity that can participate in DSR.",
     )
     shift_hours: float = Field(
         6,
-        description="Maximum hours that load can be shifted forward or backward, keyed by 'profile|technology' (e.g., 'Iron & steel industry|Scrap-EAF': 2). Determines the energy capacity of the flexibility store relative to the load.",
-    )
-    min_load: float = Field(
-        0.8,
-        description="Minimum load constraint as fraction of baseline load (hard operational limit), keyed by 'profile|technology'. E.g., 0.70 means load can only drop to 70% of baseline. Used for processes with minimum operating requirements.",
+        description="Maximum hours that load can be shifted forward or backward.",
     )
 
 class _DataCenterGenerationConfig(ConfigModel):
@@ -49,9 +45,13 @@ class _DataCenterGenerationConfig(ConfigModel):
         False,
         description="Enable data center on site generation modeling. When enabled, adds flexibility stores and links for each data center demand bus.",
     )
-    p_nom_pu: float = Field(
+    p_pct_nom: float = Field(
         0.2,
-        description="Generation capacity as a fraction of the peak demand."
+        description="Generation capacity as a fraction of the nominal capacity of the data center."
+    )
+    reference_technology: str = Field(
+        "battery",
+        description="Reference technology for cost/efficiency parameters. Should be a technology that already exists in network"
     )
 
 class _DataCenterStorageConfig(ConfigModel):
@@ -66,17 +66,42 @@ class _DataCenterStorageConfig(ConfigModel):
         False,
         description="Enable data center on site generation modeling. When enabled, adds flexibility stores and links for each data center demand bus.",
     )
-    p_nom_pu: float = Field(
+    p_pct_nom: float = Field(
         0.2,
-        description="Storage capacity as a fraction of the peak demand."
+        description="Storage capacity as a fraction of the nominal capacity of the data center."
     )
-    e_nom_pu: float = Field(
-        0.2,
-        description="Storage capacity as a fraction of the peak demand."
+    shift_hours: float = Field(
+        6,
+        description="Number of hours battery is capable of full dis/charge. e.g E_battery = P_battery * shift_hours."
+    )
+    reference_technology: str = Field(
+        "OCGT",
+        description="Technology to base assumptions of efficiency/cost on. (Should be pre existing in the network)"
     )
 
+class _DataCenterLoadConfig(ConfigModel):
+    profile: Literal["High Voltage Import", "Low Voltage Import", "Extra High Voltage Import"] = Field(
+        "High Voltage import",
+        description="Data center voltage classification in UKPN data set to base profile on"
+    )
+    year: int = Field(
+        2024,
+        description="Year of  UKPN data set to use for load profile"
+    )
+    method: Literal["min", "max", "average"] = Field(
+        "avg",
+        description="Aggregation method for data center load profiles provided by the UKPN dataset"
+    )
+
+
 class DataCenterConfigSection(BaseModel):
-    dsr: bool = Field(True)
+    dsr: bool = Field(
+        True,
+        description="Enable/disable demand side response via data centers"
+    )
+    # utilization_fraction: float = Field(
+    #   description="Assumed percent loading of the data centers. (If not provided in a load profile csv)"
+    # )
 
 class DataCenterEurelectricConfigUpdater(ConfigUpdater):
     """Config updater for Eurelectric industry configuration options.
@@ -118,24 +143,33 @@ class DataCenterEurelectricConfigUpdater(ConfigUpdater):
                     description="Data center demand-side response (DSR) configuration for modeling load flexibility.",
                 ),
             ),
-            generation=(
+            load=(
+                _DataCenterLoadConfig,
+                Field(
+                    default_factory=_DataCenterLoadConfig,
+                    description="Load data to use for data center demand",
+                ),
+            ),
+            onsite_generation=(
                 _DataCenterGenerationConfig,
                 Field(
                     default_factory=_DataCenterGenerationConfig,
-                    description="Data center on site generation config"
+                    description="Data center on site generation config",
+                    alias="on-site generation"
                 ),
             ),
-            storage=(
+            onsite_storage=(
                 _DataCenterStorageConfig,
                 Field(
                     default_factory=_DataCenterStorageConfig,
-                    description="Data center on site storage config"
+                    description="Data center on site storage config",
+                    alias="on-site storage"
                 ),
             ),
-            dc_to_grid=(
-                bool,
+            grid_connection=(
+                Literal["Grid to data center", "Data center to grid", "Bidirectional"],
                 Field(
-                    True,
+                    "Bidirectional",
                     description="Enables power to be pushed back from the data center to grid",
                 ),
             ),

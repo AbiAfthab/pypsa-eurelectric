@@ -88,13 +88,6 @@ snapshots:
   end: "2014-01-01"
   inclusive: left
 
-time_aggregation:
-  enable: true
-  method: segment
-  parameters:
-    num_segments: 365 # 4x smaller snapshots size
-    exclude_attrs: [] # Concern from GB model: demand-side flexibility implemented via store. Concern: Step changes could confuse the segmentation algorithm
-
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#enable
 enable:
   drop_leap_day: true
@@ -1145,7 +1138,7 @@ clustering:
     buses: {}
   temporal:
     resolution_elec: false
-    resolution_sector: 3H
+    resolution_sector: false
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#adjustments
 adjustments:
@@ -1499,16 +1492,22 @@ overpass_api:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#data_center
 data_center:
   dsr:
-    enable: true
-    store_capital_cost: 5.0
-    flexibility_fraction: 0.05
-    shift_hours: 6.1
-    min_load: 0.8
-  generation:
-    enable: true
-    p_nom_pu: 0.2
-  storage:
-    enable: true
-    p_nom_pu: 0.2
-    e_nom_pu: 0.2
-  dc_to_grid: true
+    enable: false
+    capital_cost: 0.1
+    marginal_cost: 0.1
+    p_pct_nom: 0.05
+    shift_hours: 6
+  load:
+    profile: High Voltage import
+    year: 2024
+    method: avg
+  "on-site generation":
+    enable: false
+    p_pct_nom: 0.2
+    reference_technology: battery
+  "on-site storage":
+    enable: false
+    p_pct_nom: 0.2
+    shift_hours: 6
+    reference_technology: OCGT
+  grid_connection: Bidirectional
