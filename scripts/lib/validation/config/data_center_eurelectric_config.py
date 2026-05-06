@@ -81,15 +81,15 @@ class _DataCenterStorageConfig(ConfigModel):
 
 class _DataCenterLoadConfig(ConfigModel):
     profile: Literal["High Voltage Import", "Low Voltage Import", "Extra High Voltage Import"] = Field(
-        "High Voltage import",
+        "High Voltage Import",
         description="Data center voltage classification in UKPN data set to base profile on"
     )
     year: int = Field(
         2024,
         description="Year of  UKPN data set to use for load profile"
     )
-    method: Literal["min", "max", "average"] = Field(
-        "avg",
+    method: Literal["min", "max", "mean"] = Field(
+        "max",
         description="Aggregation method for data center load profiles provided by the UKPN dataset"
     )
 
