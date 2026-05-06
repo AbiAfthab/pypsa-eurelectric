@@ -53,10 +53,10 @@ def attach_data_centers(
     
     # review: particularly check if this logic is acceptable the data for the load profile is missing a few timestamps
     year_delta = int(load_params['year'] - n.snapshots.year.min())
+    load_profile.index -= pd.DateOffset(years=year_delta)
     load_profile = load_profile.groupby(level=0).mean()
-    load_profile.index += pd.DateOffset(years=year_delta)
+    load_profile = load_profile.resample('h').ffill()
     load_profile = load_profile.loc[n.snapshots]
-    load_profile = load_profile.ffill()
     nodal_distribution = pd.read_csv(load_nodal_distribution_fn, index_col=['name'])
     
     load_nom = nodal_distribution['total_demand_mwh'] / utilization_hours
