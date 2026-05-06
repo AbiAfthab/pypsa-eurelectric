@@ -19,9 +19,9 @@ from scripts._helpers import configure_logging, get_snapshots, set_scenario_conf
 logger = logging.getLogger(__name__)
 
 def get_load_profile(
-        profile,
-        year,
-        method,
+        profile='High Voltage Import',
+        year='2024',
+        method='max',
         profile_fn="data/eurelectric_data_centers/ukpn-data-centre-demand-profiles.csv" 
     ):
     # get annual utilization-hours (applied to all countries equally)
@@ -55,7 +55,7 @@ def attach_data_centers(
     year_delta = int(load_params['year'] - n.snapshots.year.min())
     load_profile = load_profile.groupby(level=0).mean()
     load_profile.index += pd.DateOffset(years=year_delta)
-    load_profile = load_profile.reindex(n.snapshots)
+    load_profile = load_profile.loc[n.snapshots]
     load_profile = load_profile.ffill()
     nodal_distribution = pd.read_csv(load_nodal_distribution_fn, index_col=['name'])
     
