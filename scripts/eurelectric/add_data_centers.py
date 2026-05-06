@@ -60,9 +60,14 @@ def attach_data_centers(
     nodal_distribution = pd.read_csv(load_nodal_distribution_fn, index_col=['name'])
     
     load_nom = nodal_distribution['total_demand_mwh'] / utilization_hours
-    load = load_nom * load_profile
+    load = pd.DataFrame(
+        np.outer(load_profile.values, load_nom.values), 
+        index=load_profile.index, 
+        columns=load_nom.index
+    )
     zero_cols = load.columns[(load == 0).all()]
     load = load.drop(zero_cols, axis=1)
+    load_nom = load_nom.drop(zero_cols, axis=0)
     buses = buses[~buses.str.startswith(tuple(zero_cols))]
     
     # add main bus to contain data center demand
