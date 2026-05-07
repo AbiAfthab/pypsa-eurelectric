@@ -1235,7 +1235,7 @@ if __name__ == "__main__":
     if "snakemake" not in globals():
         from scripts._helpers import mock_snakemake
 
-        snakemake = mock_snakemake("add_electricity", clusters=50)
+        snakemake = mock_snakemake("add_electricity", clusters=60)
     configure_logging(snakemake)  # pylint: disable=E0606
     set_scenario_config(snakemake)
 
