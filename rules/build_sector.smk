@@ -1400,9 +1400,12 @@ if MOBILITY_PROFILES_DATASET["source"] in ["build"]:
                 ),
             ),
         output:
-            raw_files=directory(MOBILITY_PROFILES_DATASET["folder"] / "raw"),
-            kfz=MOBILITY_PROFILES_DATASET["folder"] / "kfz.csv",
-            pkw=MOBILITY_PROFILES_DATASET["folder"] / "pkw.csv",
+            raw_files=directory(f"{MOBILITY_PROFILES_DATASET['folder']}/raw"),
+            kfz=f"{MOBILITY_PROFILES_DATASET['folder']}/kfz.csv",
+            pkw=f"{MOBILITY_PROFILES_DATASET['folder']}/pkw.csv",
+            bus=f"{MOBILITY_PROFILES_DATASET['folder']}/bus.csv",
+            hd=f"{MOBILITY_PROFILES_DATASET['folder']}/hd.csv",
+            lfw=f"{MOBILITY_PROFILES_DATASET['folder']}/lfw.csv",
         threads: 1
         resources:
             mem_mb=5000,
@@ -1431,11 +1434,17 @@ rule build_transport_demand:
         transport_data=resources("transport_data.csv"),
         traffic_data_KFZ=f"{MOBILITY_PROFILES_DATASET['folder']}/kfz.csv",
         traffic_data_Pkw=f"{MOBILITY_PROFILES_DATASET['folder']}/pkw.csv",
+        traffic_data_Bus=f"{MOBILITY_PROFILES_DATASET['folder']}/bus.csv",
+        traffic_data_HD=f"{MOBILITY_PROFILES_DATASET['folder']}/hd.csv",
+        traffic_data_LFW=f"{MOBILITY_PROFILES_DATASET['folder']}/lfw.csv",
         temp_air_total=resources("temp_air_total_base_s_{clusters}.nc"),
     output:
         transport_demand=resources("transport_demand_s_{clusters}.csv"),
         transport_data=resources("transport_data_s_{clusters}.csv"),
-        avail_profile=resources("avail_profile_s_{clusters}.csv"),
+        avail_profile_pkw=resources("avail_profile_pkw_s_{clusters}.csv"),
+        avail_profile_bus=resources("avail_profile_bus_s_{clusters}.csv"),
+        avail_profile_hd=resources("avail_profile_hd_s_{clusters}.csv"),
+        avail_profile_lfw=resources("avail_profile_lfw_s_{clusters}.csv"),
         dsm_profile=resources("dsm_profile_s_{clusters}.csv"),
     threads: 1
     resources:

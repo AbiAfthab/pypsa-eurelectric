@@ -431,7 +431,7 @@ def idees_per_country(ct: str, base_dir: str) -> pd.DataFrame:
             logger.warning(f"Multiple rows found for code '{code}', taking first.")
         return pd.to_numeric(hit.iloc[0], errors="coerce")
 
-    # Passenger-km (million passenger-km) time series for passenger cars
+    # Passenger-km and tonnekm (million passenger-km or million tonne-km) time series for passenger cars and trucks respectively
     def series_by_country_prefix(prefix_template):
         candidates = [
             prefix_template.format(ct=ct),
@@ -444,17 +444,46 @@ def idees_per_country(ct: str, base_dir: str) -> pd.DataFrame:
                 continue
         raise KeyError(f"No matching IDEES code found for country {ct}")
 
+    # passenger cars activity (million passenger-km)
     ct_totals["passenger_car_pkm"] = series_by_country_prefix(
     "Activity.Mpkm.{ct}.Tr.Road.Passenger.Car")
+    # Heavy goods vehicles activity (million tonne-km)
+    ct_totals["hgv_mtkm"] = series_by_country_prefix(
+    "Activity.Mtkm.{ct}.Tr.Road.Freight.HGV_All")
+    # Motor coaches, buses and trolley buses activity (million-passenger-km)
+    ct_totals["bus_mpkm"] = series_by_country_prefix(
+    "Activity.Mpkm.{ct}.Tr.Road.Passenger.Bus")
+    # Light commercial vehicles (million tonne-km)
+    ct_totals["lcv_mtkm"] = series_by_country_prefix(
+    "Activity.Mtkm.{ct}.Tr.Road.Freight.LCV")
+
 
     # Passengers per movement time series for passenger cars
     ct_totals["passengers_per_movement"] = series_by_country_prefix(
     "Load.passenger_per_movement.{ct}.Tr.Road.Passenger.Car")
+    # Heavy goods vehicles load factor (tonnes per movement)
+    ct_totals["hgv_t_per_movement"] = series_by_country_prefix(
+    "Load.t_per_movement.{ct}.Tr.Road.Freight.HGV_All")
+    # Motor coaches, buses and trolley buses load factor (passengers per movement)
+    ct_totals["bus_passengers_per_movement"] = series_by_country_prefix(
+    "Load.passenger_per_movement.{ct}.Tr.Road.Passenger.Bus")
+    # Light commercial vehicles load factor (tonnes per movement)
+    ct_totals["lcv_t_per_movement"] = series_by_country_prefix(
+    "Load.t_per_movement.{ct}.Tr.Road.Freight.LCV")
+
+
+
     
     
-    # Existing: passenger cars stock/activity row (ensure we only keep year columns!)
-    assert df.index[85] == "Passenger cars"
-    ct_totals["passenger cars"] = pd.to_numeric(df.iloc[85][year_cols], errors="coerce")
+    # Existing: passenger cars stock, HGV stock, LCV stock, bus stock 
+    ct_totals["passenger cars"] = series_by_country_prefix(
+    "Stock.number.{ct}.Tr.Road.Passenger.Car")
+    ct_totals["hgv_stock"] = series_by_country_prefix(
+    "Stock.number.{ct}.Tr.Road.Freight.HGV_All")
+    ct_totals["lcv_stock"] = series_by_country_prefix(
+    "Stock.number.{ct}.Tr.Road.Freight.LCV")
+    ct_totals["bus_stock"] = series_by_country_prefix(
+    "Stock.number.{ct}.Tr.Road.Passenger.Bus")
 
 
 
@@ -533,6 +562,15 @@ def build_idees(countries: list[str]) -> pd.DataFrame:
     "passenger car efficiency",
     "passenger_car_pkm",
     "passengers_per_movement",
+    "hgv_mtkm",
+    "hgv_t_per_movement",
+    "hgv_stock",
+    "bus_mpkm",
+    "bus_passengers_per_movement",
+    "bus_stock",
+    "lcv_mtkm",
+    "lcv_t_per_movement",
+    "lcv_stock",
     ".*space efficiency",
     ".*water efficiency",
 ]
@@ -1142,10 +1180,23 @@ def build_transport_data(
 
     # first collect number of cars
     transport_data = pd.DataFrame(idees["passenger cars"])
-
-    #collect passenger_car_pkm and passengers_per_movement
+    
+    #collect passenger_car_pkm and passengers_per_movement for passenger cars
     transport_data["passenger_car_pkm"] = idees["passenger_car_pkm"] * 1e6
     transport_data["passengers_per_movement"] = idees["passengers_per_movement"]
+    # collect million_tonnne_km and tonnes_per_movement for heavy goods vehicles
+    transport_data["hgv_stock"] = idees["hgv_stock"]
+    transport_data["hgv_mtkm"] = idees["hgv_mtkm"] * 1e6
+    transport_data["hgv_t_per_movement"] = idees["hgv_t_per_movement"]
+    #collect million_passenger_km and passengers_per_movement for Motor coaches, buses and trolley buses
+    transport_data["bus_stock"] = idees["bus_stock"]
+    transport_data["bus_mpkm"] = idees["bus_mpkm"] * 1e6
+    transport_data["bus_passengers_per_movement"] = idees["bus_passengers_per_movement"]
+    #collect million_tonnne_km and tonnes_per_movement for light commercial vehicles
+    transport_data["lcv_stock"] = idees["lcv_stock"]
+    transport_data["lcv_mtkm"] = idees["lcv_mtkm"] * 1e6
+    transport_data["lcv_t_per_movement"] = idees["lcv_t_per_movement"]
+
 
     countries_without_ch = set(countries) - {"CH"}
     new_index = pd.MultiIndex.from_product(
@@ -1173,10 +1224,23 @@ def build_transport_data(
         swiss_cars.index = pd.MultiIndex.from_product(
             [["CH"], swiss_cars.index], names=["country", "year"]
         )
-        #passenger_car_pkm and passengers_per_movement gets filled later using EU average/per capita*population approach
+        #passenger_car_pkm and passengers_per_movement for passenger cars gets filled later using EU average/per capita*population approach
         swiss_cars["passenger_car_pkm"] = np.nan
         swiss_cars["passengers_per_movement"] = np.nan
+        #tonne_km and tonnes_per_movement gets filled later using EU average/per capita*population approach
+        swiss_cars["hgv_mtkm"] = np.nan
+        swiss_cars["hgv_t_per_movement"] = np.nan
+        swiss_cars["hgv_stock"] = np.nan
+        #million_passenger_km and passengers_per_movement for Motor coaches, buses and trolley buses gets filled later using EU average/per capita*population approach
+        swiss_cars["bus_mpkm"] = np.nan
+        swiss_cars["bus_passengers_per_movement"] = np.nan
+        swiss_cars["bus_stock"] = np.nan
+        #tonne_km and tonnes_per_movement for light commercial vehicles gets filled later using EU average/per capita*population approach
+        swiss_cars["lcv_mtkm"] = np.nan
+        swiss_cars["lcv_t_per_movement"] = np.nan
+        swiss_cars["lcv_stock"] = np.nan
         transport_data = pd.concat([transport_data, swiss_cars]).sort_index()
+
 
     transport_data = transport_data.rename(columns={"passenger cars": "number cars"})
     # clean up dataframe
@@ -1200,6 +1264,62 @@ def build_transport_data(
         fill_values = fill_values.reindex(transport_data.index)
 
         transport_data = transport_data.combine_first(fill_values)
+
+   # fill missing hgv_stock using EU-average per-capita values ---
+    missing = transport_data.index[transport_data["hgv_stock"].isna()]
+    if not missing.empty:
+        logger.info(
+            f"Missing data on hgv_stock from:\n{list(missing)}\n"
+            "Filling gaps with averaged per-capita data."
+        )
+        hgv_stock_pp = transport_data["hgv_stock"] / population
+        fill_values = {
+            year: hgv_stock_pp.mean() * population
+            for year in transport_data.index.unique(1)
+        }
+        fill_values = pd.DataFrame(fill_values).stack()
+        fill_values = pd.DataFrame(fill_values, columns=["hgv_stock"])
+        fill_values.index.names = ["country", "year"]
+        fill_values = fill_values.reindex(transport_data.index)
+        transport_data = transport_data.combine_first(fill_values)
+    
+    # fill missing lcv_stock using EU-average per-capita values ---
+    missing = transport_data.index[transport_data["lcv_stock"].isna()]
+    if not missing.empty:
+        logger.info(
+            f"Missing data on lcv_stock from:\n{list(missing)}\n"
+            "Filling gaps with averaged per-capita data."
+        )
+        lcv_stock_pp = transport_data["lcv_stock"] / population
+        fill_values = {
+            year: lcv_stock_pp.mean() * population
+            for year in transport_data.index.unique(1)
+        }
+        fill_values = pd.DataFrame(fill_values).stack()
+        fill_values = pd.DataFrame(fill_values, columns=["lcv_stock"])
+        fill_values.index.names = ["country", "year"]
+        fill_values = fill_values.reindex(transport_data.index)
+        transport_data = transport_data.combine_first(fill_values)
+
+    # fill missing bus_stock using EU-average per-capita values ---
+    missing = transport_data.index[transport_data["bus_stock"].isna()]
+    if not missing.empty:
+        logger.info(
+            f"Missing data on bus_stock from:\n{list(missing)}\n"
+            "Filling gaps with averaged per-capita data."
+        )
+        bus_stock_pp = transport_data["bus_stock"] / population
+        fill_values = {
+            year: bus_stock_pp.mean() * population
+            for year in transport_data.index.unique(1)
+        }
+        fill_values = pd.DataFrame(fill_values).stack()
+        fill_values = pd.DataFrame(fill_values, columns=["bus_stock"])
+        fill_values.index.names = ["country", "year"]
+        fill_values = fill_values.reindex(transport_data.index)
+        transport_data = transport_data.combine_first(fill_values)
+
+
     
     # fill missing passenger_car_pkm using EU-average per-capita values ---
     missing = transport_data.index[transport_data["passenger_car_pkm"].isna()]
@@ -1219,6 +1339,7 @@ def build_transport_data(
         fill_values = fill_values.reindex(transport_data.index)
 
         transport_data = transport_data.combine_first(fill_values)
+   
 
     # fill missing passengers_per_movement using overall mean (ratio) ---
     missing = transport_data.index[transport_data["passengers_per_movement"].isna()]
@@ -1232,6 +1353,108 @@ def build_transport_data(
 
     # collect average fuel efficiency in MWh/100km, taking passengar car efficiency in TWh/100km
     transport_data["average fuel efficiency"] = idees["passenger car efficiency"] * 1e6
+
+    
+    # fill missing hgv_mtkm using EU-average per-capita values ---
+    missing = transport_data.index[transport_data["hgv_mtkm"].isna()]
+    if not missing.empty:
+        logger.info(
+            f"Missing data on hgv_mtkm from:\n{list(missing)}\n"
+            "Filling gaps with averaged per-capita data."
+        )
+        hgv_tkm_pp = transport_data["hgv_mtkm"] / population
+        fill_values = {
+            year: hgv_tkm_pp.mean() * population for year in transport_data.index.unique(1)
+        }
+        fill_values = pd.DataFrame(fill_values).stack()
+        fill_values = pd.DataFrame(fill_values, columns=["hgv_mtkm"])
+        fill_values.index.names = ["country", "year"]
+        fill_values = fill_values.reindex(transport_data.index)
+        transport_data = transport_data.combine_first(fill_values)  
+
+    # fill missing/non-positive hgv_t_per_movement using overall mean (ratio) ---
+    invalid = (
+        transport_data["hgv_t_per_movement"].isna()
+        | (transport_data["hgv_t_per_movement"] <= 0)
+    )
+    missing = transport_data.index[invalid]
+    if not missing.empty:
+        logger.info(
+            f"Missing or non-positive data on hgv_t_per_movement from:\n{list(missing)}\n"
+            "Filling gaps with averaged positive data."
+        )
+        fill_value = transport_data.loc[
+            transport_data["hgv_t_per_movement"] > 0, "hgv_t_per_movement"
+        ].mean()
+        transport_data.loc[missing, "hgv_t_per_movement"] = fill_value
+
+    # fill missing bus_mpkm using EU-average per-capita values ---
+    missing = transport_data.index[transport_data["bus_mpkm"].isna()]
+    if not missing.empty:
+        logger.info(
+            f"Missing data on bus_mpkm from:\n{list(missing)}\n"
+            "Filling gaps with averaged per-capita data."
+        )
+        bus_pkm_pp = transport_data["bus_mpkm"] / population
+        fill_values = {
+            year: bus_pkm_pp.mean() * population
+            for year in transport_data.index.unique(1)
+        }
+        fill_values = pd.DataFrame(fill_values).stack()
+        fill_values = pd.DataFrame(fill_values, columns=["bus_mpkm"])
+        fill_values.index.names = ["country", "year"]
+        fill_values = fill_values.reindex(transport_data.index)
+        transport_data = transport_data.combine_first(fill_values)
+
+    # fill missing/non-positive bus_passengers_per_movement using overall mean (ratio) ---
+    invalid = (
+        transport_data["bus_passengers_per_movement"].isna()
+        | (transport_data["bus_passengers_per_movement"] <= 0))
+    missing = transport_data.index[invalid]
+    if not missing.empty:
+        logger.info(
+            f"Missing or non-positive data on bus_passengers_per_movement from:\n{list(missing)}\n"
+            "Filling gaps with averaged positive data."
+        )
+        fill_value = transport_data.loc[
+            transport_data["bus_passengers_per_movement"] > 0,
+            "bus_passengers_per_movement",
+        ].mean()
+        transport_data.loc[missing, "bus_passengers_per_movement"] = fill_value
+
+    # fill missing lcv_mtkm using EU-average per-capita values ---
+    missing = transport_data.index[transport_data["lcv_mtkm"].isna()]
+    if not missing.empty:
+        logger.info(
+            f"Missing data on lcv_mtkm from:\n{list(missing)}\n"
+            "Filling gaps with averaged per-capita data."
+        )
+        lcv_tkm_pp = transport_data["lcv_mtkm"] / population
+        fill_values = {
+            year: lcv_tkm_pp.mean() * population
+            for year in transport_data.index.unique(1)
+        }
+        fill_values = pd.DataFrame(fill_values).stack()
+        fill_values = pd.DataFrame(fill_values, columns=["lcv_mtkm"])
+        fill_values.index.names = ["country", "year"]
+        fill_values = fill_values.reindex(transport_data.index)
+        transport_data = transport_data.combine_first(fill_values)    
+
+    # fill missing/non-positive lcv_t_per_movement using overall mean (ratio) ---
+    invalid = (
+        transport_data["lcv_t_per_movement"].isna()
+        | (transport_data["lcv_t_per_movement"] <= 0)
+    )
+    missing = transport_data.index[invalid]
+    if not missing.empty:
+        logger.info(
+            f"Missing or non-positive data on lcv_t_per_movement from:\n{list(missing)}\n"
+            "Filling gaps with averaged positive data."
+        )
+        fill_value = transport_data.loc[
+            transport_data["lcv_t_per_movement"] > 0, "lcv_t_per_movement"
+        ].mean()
+        transport_data.loc[missing, "lcv_t_per_movement"] = fill_value
 
     missing = transport_data.index[transport_data["average fuel efficiency"].isna()]
     if not missing.empty:

@@ -42,6 +42,22 @@ def build_nodal_transport_data(fn, pop_layout, year):
         nodal_transport_data["passenger_car_pkm"] = (
             pop_layout["fraction"] * nodal_transport_data["passenger_car_pkm"]
         )
+    #hgv_mtkm should be scaled to nodes (extensive)
+    if "hgv_mtkm" in nodal_transport_data.columns:
+        nodal_transport_data["hgv_mtkm"] = (
+            pop_layout["fraction"] * nodal_transport_data["hgv_mtkm"]
+        )
+    #bus million_passenger_km should be scaled to nodes (extensive)
+    if "bus_mpkm" in nodal_transport_data.columns:
+        nodal_transport_data["bus_mpkm"] = (
+            pop_layout["fraction"] * nodal_transport_data["bus_mpkm"]
+        )
+    #lcv_mtkm should be scaled to nodes (extensive)
+    if "lcv_mtkm" in nodal_transport_data.columns:
+        nodal_transport_data["lcv_mtkm"] = (
+            pop_layout["fraction"] * nodal_transport_data["lcv_mtkm"]
+        )
+
 
     # passengers_per_movement is a ratio -> do NOT scale; just keep country value
     # (already mapped by .loc[pop_layout.ct])
@@ -59,24 +75,58 @@ def build_nodal_transport_data(fn, pop_layout, year):
             "passengers_per_movement",
         ] = transport_data["passengers_per_movement"].mean()
 
+    # fill missing/zero heavy-truck load factor at nodal level
+    if "hgv_t_per_movement" in nodal_transport_data.columns:
+        nodal_transport_data.loc[
+            nodal_transport_data["hgv_t_per_movement"] == 0.0,
+            "hgv_t_per_movement",
+        ] = transport_data["hgv_t_per_movement"].mean()
+
+    # fill missing/zero bus passengers-per-movement at nodal level
+    if "bus_passengers_per_movement" in nodal_transport_data.columns:
+        nodal_transport_data.loc[
+            nodal_transport_data["bus_passengers_per_movement"] == 0.0,
+            "bus_passengers_per_movement",
+        ] = transport_data["bus_passengers_per_movement"].mean()
+
+    # fill missing/zero van load factor at nodal level
+    if "lcv_t_per_movement" in nodal_transport_data.columns:
+        nodal_transport_data.loc[
+            nodal_transport_data["lcv_t_per_movement"] == 0.0,
+            "lcv_t_per_movement",
+        ] = transport_data["lcv_t_per_movement"].mean()
+
+
     return nodal_transport_data
 
 
-def build_transport_demand(traffic_fn, nodes, nodal_transport_data):
+def build_transport_demand(traffic_fn_passenger, traffic_fn_truck, nodes, nodal_transport_data):
     """
     Returns transport demand per bus in unit km driven [100 km].
     """
-    # averaged weekly counts from the year 2010-2015
-    traffic = pd.read_csv(traffic_fn, skiprows=2, usecols=["count"]).squeeze("columns")
+    # Passenger temporal profile
+    traffic_passenger = pd.read_csv(
+        traffic_fn_passenger, skiprows=2, usecols=["count"]
+    ).squeeze("columns")
 
-    # create annual profile take account time zone + summer time
-    transport_shape = generate_periodic_profiles(
+    transport_shape_passenger = generate_periodic_profiles(
         dt_index=snapshots,
         nodes=nodes,
-        weekly_profile=traffic.values,
+        weekly_profile=traffic_passenger.values,
     )
-    transport_shape = transport_shape / transport_shape.sum()
+    transport_shape_passenger = transport_shape_passenger / transport_shape_passenger.sum()
 
+    #Truck temporal profile (temporary proxy using KFZ = all motor vehicles)
+    # TODO: replace with dedicated Lkw truck profile when available.
+    traffic_truck = pd.read_csv(
+        traffic_fn_truck, skiprows=2, usecols=["count"]
+    ).squeeze("columns")
+    transport_shape_truck = generate_periodic_profiles(
+        dt_index=snapshots,
+        nodes=nodes,
+        weekly_profile=traffic_truck.values,
+    )
+    transport_shape_truck = transport_shape_truck / transport_shape_truck.sum() 
 
     pkm = nodal_transport_data["passenger_car_pkm"]
     ppm = nodal_transport_data["passengers_per_movement"]
@@ -87,14 +137,68 @@ def build_transport_demand(traffic_fn, nodes, nodal_transport_data):
         raise ValueError("passengers_per_movement contains zero or NaN values after filling.")
     planning_year = int(pd.Index(snapshots).year[0])
     pkm_scale = options.get("land_transport_passenger_km_scaling", {}).get(planning_year, 1.0)
-
     pkm = pkm * float(pkm_scale)
 
     km_driven = pkm / ppm
 
     km_100km = km_driven / 100.0
 
-    return transport_shape.multiply(km_100km) * nyears
+    demand_passenger = transport_shape_passenger.multiply(km_100km) * nyears
+
+    # Truck demand from HGV tonne-km and load factor
+    hgv_mtkm = nodal_transport_data["hgv_mtkm"]
+    truck_scale = options.get("land_transport_truck_km_scaling", {}).get(planning_year, 1.0)
+    hgv_mtkm = hgv_mtkm * float(truck_scale)
+    hgv_t_per_movement = nodal_transport_data["hgv_t_per_movement"].replace(0, np.nan)
+    if hgv_t_per_movement.isna().any():
+        raise ValueError("hgv_t_per_movement contains zero or NaN values after filling.")
+    truck_movements = hgv_mtkm / hgv_t_per_movement
+    truck_100km = truck_movements / 100.0
+    demand_truck = transport_shape_truck.multiply(truck_100km) * nyears
+
+    # Van demand from LCV tonne-km and load factor
+    lcv_mtkm = nodal_transport_data["lcv_mtkm"]
+    van_scale = options.get("land_transport_van_km_scaling", {}).get(planning_year, 1.0)
+    lcv_mtkm = lcv_mtkm * float(van_scale)
+
+    lcv_t_per_movement = nodal_transport_data["lcv_t_per_movement"].replace(0, np.nan)
+    if lcv_t_per_movement.isna().any():
+        raise ValueError("lcv_t_per_movement contains zero or NaN values after filling.")
+
+    van_movements = lcv_mtkm / lcv_t_per_movement
+    van_100km = van_movements / 100.0
+    demand_van = transport_shape_truck.multiply(van_100km) * nyears
+
+    # Bus demand from bus passenger-km and load factor
+    bus_mpkm = nodal_transport_data["bus_mpkm"]
+    bus_scale = options.get("land_transport_bus_km_scaling", {}).get(planning_year, 1.0)
+    bus_mpkm = bus_mpkm * float(bus_scale)
+
+    bus_passengers_per_movement = nodal_transport_data["bus_passengers_per_movement"].replace(
+        0, np.nan
+    )
+    if bus_passengers_per_movement.isna().any():
+        raise ValueError(
+            "bus_passengers_per_movement contains zero or NaN values after filling."
+        )
+
+    bus_movements = bus_mpkm / bus_passengers_per_movement
+    bus_100km = bus_movements / 100.0
+    demand_bus = transport_shape_truck.multiply(bus_100km) * nyears
+
+    demand_passenger.columns = pd.Index(demand_passenger.columns, name=None)
+    demand_truck.columns = pd.Index(demand_truck.columns, name=None)
+    demand_van.columns = pd.Index(demand_van.columns, name=None)
+    demand_bus.columns = pd.Index(demand_bus.columns, name=None)
+    transport_demand = pd.concat(
+    {
+        "passenger": demand_passenger,
+        "truck": demand_truck,
+        "van": demand_van,
+        "bus": demand_bus,
+    },
+    axis=1,)
+    return transport_demand
 
 
 def transport_degree_factor(
@@ -202,9 +306,10 @@ if __name__ == "__main__":
     )
 
     transport_demand = build_transport_demand(
-        snakemake.input.traffic_data_KFZ,
-        nodes,
-        nodal_transport_data,
+    snakemake.input.traffic_data_Pkw,   # passenger profile
+    snakemake.input.traffic_data_KFZ,   # truck proxy profile (temporary)
+    nodes,
+    nodal_transport_data,
     )
 
     avail_profile = bev_availability_profile(
