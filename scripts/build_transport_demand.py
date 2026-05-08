@@ -126,33 +126,23 @@ def transport_degree_factor(
     return dd
 
 
-def bev_availability_profile(fn, snapshots, nodes, options):
-    """
-    Derive plugged-in availability for passenger electric vehicles.
-    """
-    # car count in typical week
+def vehicle_availability_profile(fn, snapshots, nodes, avail_max, avail_mean, label):
     traffic = pd.read_csv(fn, skiprows=2, usecols=["count"]).squeeze("columns")
-    # maximum share plugged-in availability for passenger electric vehicles
-    avail_max = options["bev_avail_max"]
-    # average share plugged-in availability for passenger electric vehicles
-    avail_mean = options["bev_avail_mean"]
 
-    # linear scaling, highest when traffic is lowest, decreases if traffic increases
-    avail = avail_max - (avail_max - avail_mean) * (traffic - traffic.min()) / (
-        traffic.mean() - traffic.min()
+    avail = avail_max - (avail_max - avail_mean) * (traffic - traffic.min()) / (traffic.mean() - traffic.min()
     )
 
     if not avail[avail < 0].empty:
         logger.warning(
-            "The BEV availability weekly profile has negative values which can "
-            "lead to infeasibility."
+            f"The {label} weekly availability profile has negative values, which can cause infeasibility."
         )
-
     return generate_periodic_profiles(
         dt_index=snapshots,
         nodes=nodes,
         weekly_profile=avail.values,
-    )
+    )        
+
+
 
 
 def bev_dsm_profile(snapshots, nodes, options):
@@ -202,18 +192,53 @@ if __name__ == "__main__":
     )
 
     transport_demand = build_transport_demand(
-        snakemake.input.traffic_data_KFZ,
+        snakemake.input.traffic_data_Pkw,
         nodes,
         nodal_transport_data,
     )
 
-    avail_profile = bev_availability_profile(
-        snakemake.input.traffic_data_Pkw, snapshots, nodes, options
+    avail_profile_pkw = vehicle_availability_profile(
+        snakemake.input.traffic_data_Pkw,
+        snapshots,
+        nodes,
+        options["pkw_bev_avail_max"],
+        options["pkw_bev_avail_mean"],
+        label="PKW",
+    )
+    
+    avail_profile_bus = vehicle_availability_profile(
+        snakemake.input.traffic_data_Bus,
+        snapshots,
+        nodes,
+        options["bus_bev_avail_max"],
+        options["bus_bev_avail_mean"],
+        label="BUS",
+    )
+
+    avail_profile_hd = vehicle_availability_profile(
+        snakemake.input.traffic_data_HD,
+        snapshots,
+        nodes,
+        options["hd_bev_avail_max"],
+        options["hd_bev_avail_mean"],
+        label="HD",
+    )
+
+    avail_profile_lfw = vehicle_availability_profile(
+        snakemake.input.traffic_data_LFW,
+        snapshots,
+        nodes,
+        options["lfw_bev_avail_max"],
+        options["lfw_bev_avail_mean"],
+        label="LFW",
     )
 
     dsm_profile = bev_dsm_profile(snapshots, nodes, options)
 
     nodal_transport_data.to_csv(snakemake.output.transport_data)
     transport_demand.to_csv(snakemake.output.transport_demand)
-    avail_profile.to_csv(snakemake.output.avail_profile)
+    avail_profile_pkw.to_csv(snakemake.output.avail_profile_pkw)
+    avail_profile_bus.to_csv(snakemake.output.avail_profile_bus)
+    avail_profile_hd.to_csv(snakemake.output.avail_profile_hd)
+    avail_profile_lfw.to_csv(snakemake.output.avail_profile_lfw)
     dsm_profile.to_csv(snakemake.output.dsm_profile)

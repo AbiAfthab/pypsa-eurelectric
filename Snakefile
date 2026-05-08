@@ -26,6 +26,11 @@ from scripts.lib.validation.config import validate_config
 configfile: "config/config.default.yaml"
 configfile: "config/plotting.default.yaml"
 
+# PyPSA-Eurelectric fork defaults (e.g. mobility_profiles source: build). Loads before
+# optional config/config.yaml so a local config.yaml can still override everything.
+if Path("config/config.eurelectric.default.yaml").exists():
+    configfile: "config/config.eurelectric.default.yaml"
+
 
 # Config stacking: override defaults with small scenario files via CLI:
 #   snakemake -call --configfile config/config.eurelectric.default.yaml config/test/config.eu_38_2030_base.yaml config/test/config.dsr_v3_test.yaml
