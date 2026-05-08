@@ -71,6 +71,16 @@ clustering:
     resolution_sector: 3h
 
 # =============================================================================
+# DATASETS (override defaults from config.default.yaml)
+# =============================================================================
+# Build BASt mobility profiles locally so extended CSVs (bus, hd, lfw) are
+# produced. Archive mode only retrieves pre-built kfz/pkw from pypsa.org.
+data:
+  mobility_profiles:
+    source: build
+    version: latest
+
+# =============================================================================
 # SECTOR COUPLING SETTINGS
 # =============================================================================
 sector:
@@ -99,6 +109,16 @@ sector:
   # Electric vehicle flexibility
   bev_dsm: true
   v2g: true
+
+  # Class-specific plugged-in availability assumptions
+  pkw_bev_avail_max: 0.95
+  pkw_bev_avail_mean: 0.80
+  bus_bev_avail_max: 0.90
+  bus_bev_avail_mean: 0.60
+  hd_bev_avail_max: 0.85
+  hd_bev_avail_mean: 0.70
+  lfw_bev_avail_max: 0.92
+  lfw_bev_avail_mean: 0.70
 
 # =============================================================================
 # INDUSTRY SETTINGS
