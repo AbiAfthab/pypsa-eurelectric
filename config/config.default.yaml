@@ -1498,9 +1498,9 @@ data_center:
     p_pct_nom: 0.05
     shift_hours: 6
   load:
-    profile: High Voltage import
+    profile: High Voltage Import
     year: 2024
-    method: avg
+    method: max
   "on-site generation":
     enable: false
     p_pct_nom: 0.2

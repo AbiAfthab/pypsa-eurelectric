@@ -36,23 +36,26 @@ def get_load_profile(
 def attach_data_centers(
         n, 
         load_nodal_distribution_fn,
-        generation, 
-        storage,
-        load_params,
-        grid_connection, 
-        dsr
+        params
     ):
+
+    load = params['load']
+    generation = params['on-site generation']
+    storage = params['on-site storage']
+    grid_connection = params['grid_connection']
+    dsr = params['dsr']
+
     
     # all low voltage/distribution connections
     buses = n.buses[n.buses.index.str.contains('low voltage')].index
 
     # check for nodes where the reported demand is 0 and filter them out
     # add baseline demand and assign loads
-    load_profile = get_load_profile(**load_params)
+    load_profile = get_load_profile(**load)
     utilization_hours = load_profile.sum()
     
     # review: particularly check if this logic is acceptable the data for the load profile is missing a few timestamps
-    year_delta = int(load_params['year'] - n.snapshots.year.min())
+    year_delta = int(load['year'] - n.snapshots.year.min())
     load_profile.index -= pd.DateOffset(years=year_delta)
     load_profile = load_profile.groupby(level=0).mean()
     load_profile = load_profile.resample('h').ffill()
@@ -139,8 +142,10 @@ def attach_data_centers(
             e_nom=load_nom.values * dsr['p_pct_nom'] * dsr['shift_hours'] 
         )
 
+    # add onsite storage
     if storage['enable']:
-        # add onsite storage
+        ref_stores = n.stores[n.stores.carrier == storage['reference_technology']]
+
         n.add(
             "Store", 
             name=buses, 
@@ -148,46 +153,26 @@ def attach_data_centers(
             bus=buses,
             e_nom=load_nom.values * storage['p_pct_nom'] * storage['shift_hours'],
             p_nom=load_nom.values * storage['p_pct_nom'],
+            efficiency=ref_stores['efficiency'].mean()
         )
     
-    if generation['enable']:
-        # add onsite generation
+    # add onsite generation
+    if generation['enable']: 
+        ref_generators = n.links[n.links.carrier == generation['reference_technology']]
+
         n.add(
             "Link", 
             name=buses, 
             suffix=" data center OCGT", 
             bus0="EU gas", 
             bus1=buses, 
-            efficiency=0.43,
+            efficiency=ref_generators['efficiency'].mean(),
             bus2='co2 atmosphere',
-            efficiency2=0.198,
-            p_nom=load.max(axis=0).values * storage['p_pct_nom'], #TODO fix
-            marginal_cost=2.584773,
-            carrier="OCGT"
+            efficiency2=ref_generators['efficiency2'].mean(),
+            p_nom=load_nom.values * storage['p_pct_nom'], 
+            marginal_cost=ref_generators['marginal_cost'].mean(),
+            carrier=generation['reference_technology']
         )
 
-    return n
-
-if __name__ == "__main__":
-    # if "snakemake" not in globals():
-    if True:
-        from scripts._helpers import mock_snakemake
-
-        snakemake = mock_snakemake("add_data_centers", clusters=50)
-
-    configure_logging(snakemake)
-    set_scenario_config(snakemake)
-
-    n = pypsa.Network(snakemake.input['network'])
-    n = attach_data_centers(
-            n, 
-            load_nodal_distribution_fn=snakemake.input['data_center_nodal_demand'], 
-            generation=snakemake.params.data_center['on-site generation'],
-            storage=snakemake.params.data_center['on-site storage'],
-            dsr=snakemake.params.data_center['dsr'],
-            load_params=snakemake.params.data_center['load'],
-            grid_connection=snakemake.params.data_center['grid_connection']
-        )
-    n.links.reversed=False
-    n.export_to_netcdf(snakemake.output[0])
+    return
 

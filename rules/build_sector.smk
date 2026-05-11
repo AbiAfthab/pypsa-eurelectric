@@ -1641,6 +1641,7 @@ rule prepare_sector_network:
         temperature_limited_stores=config_provider(
             "sector", "district_heating", "temperature_limited_stores"
         ),
+        data_center=config_provider("data_center")
     input:
         unpack(input_profile_offwind),
         unpack(input_heat_source_power),
@@ -1789,6 +1790,14 @@ rule prepare_sector_network:
             if config_provider("sector", "district_heating", "ates", "enable")(w)
             else []
         ),
+        data_center_nodal_demand=lambda w: (
+            resources("eurelectric_data_centers/data_center_demand_s_50.csv")
+            if config_provider("data_center")(w)
+            else []
+        ),
+        data_center_demand_profile=lambda w: (
+            "data/eurelectric_data_centers/low-voltage-data-center-profile.csv"
+        )
     output:
         resources(
             "networks/base_s_{clusters}_{opts}_{sector_opts}_{planning_horizons}.nc"

@@ -46,6 +46,8 @@ from scripts.definitions.heat_sector import HeatSector
 from scripts.definitions.heat_system import HeatSystem
 from scripts.prepare_network import maybe_adjust_costs_and_potentials
 
+from scripts.eurelectric.add_data_centers import attach_data_centers
+
 spatial = SimpleNamespace()
 logger = logging.getLogger(__name__)
 
@@ -7334,6 +7336,10 @@ if __name__ == "__main__":
 
     if options["electricity_grid_connection"]:
         add_electricity_grid_connection(n, costs)
+
+    if True: # replace with a data center flag in options?
+        attach_data_centers(n, snakemake.input.data_center_nodal_demand, snakemake.config["data_center"])
+
 
     for k, v in options["transmission_efficiency"].items():
         if k in options["transmission_efficiency"]["enable"]:
