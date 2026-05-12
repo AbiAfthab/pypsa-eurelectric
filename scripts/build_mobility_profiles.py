@@ -7,12 +7,16 @@ Create profiles for road transport demand using measured data from vehicle monit
 This rule downloads the data files, extracts them, and then aggregates the data to weekly profiles for two vehicle types:
 - "kfz": All motor vehicles (="Kraftfahrzeuge", i.e. cars, trucks, buses, motorcycles)
 - "pkw": Passenger cars only (="Personenkraftwagen")
+- "lfw": light commercial vehicles (vans)
+- "hd": Heavy duty trucks
 
 Outputs
 -------
 
 - ``data/mobility_profiles/build/<version>/kfz.csv``: Weekly profile for all motor vehicles (cars, trucks, buses, motorcycles).
 - ``data/mobility_profiles/build/<version>/pkw.csv``: Weekly profile for passenger cars only.
+- ``data/mobility_profiles/build/<version>/lfw.csv``: Weekly profile for light commercial vehicles only.
+- ``data/mobility_profiles/build/<version>/hd.csv``: Weekly profile for trucks only.
 
 **kfz.csv**
 
