@@ -100,33 +100,57 @@ def build_nodal_transport_data(fn, pop_layout, year):
     return nodal_transport_data
 
 
-def build_transport_demand(traffic_fn_passenger, traffic_fn_truck, nodes, nodal_transport_data):
+def build_transport_demand(
+    traffic_fn_pkw,
+    traffic_fn_bus,
+    traffic_fn_hd,
+    traffic_fn_lfw,
+    nodes,
+    nodal_transport_data,
+):
     """
-    Returns transport demand per bus in unit km driven [100 km].
+    Build hourly land-transport service demand per node in units of [100 km].
+    Weekly temporal splitting uses mode-specific mobility profiles:
+    - PKW  (passenger cars) -> passenger segment
+    - Bus  -> bus segment
+    - HD   (heavy duty)     -> truck (HGV) segment
+    - LFW  (light freight)  -> van (LCV) segment
+    Annual activity comes from nodal_transport_data (IDEES-based scaling applied upstream).
     """
     # Passenger temporal profile
-    traffic_passenger = pd.read_csv(
-        traffic_fn_passenger, skiprows=2, usecols=["count"]
-    ).squeeze("columns")
-
+    traffic_pkw = pd.read_csv(traffic_fn_pkw, skiprows=2, usecols=["count"]).squeeze("columns")
     transport_shape_passenger = generate_periodic_profiles(
         dt_index=snapshots,
         nodes=nodes,
-        weekly_profile=traffic_passenger.values,
+        weekly_profile=traffic_pkw.values,
     )
     transport_shape_passenger = transport_shape_passenger / transport_shape_passenger.sum()
 
-    #Truck temporal profile (temporary proxy using KFZ = all motor vehicles)
-    # TODO: replace with dedicated Lkw truck profile when available.
-    traffic_truck = pd.read_csv(
-        traffic_fn_truck, skiprows=2, usecols=["count"]
-    ).squeeze("columns")
+    #Truck temporal profile 
+    traffic_hd = pd.read_csv(traffic_fn_hd, skiprows=2, usecols=["count"]).squeeze("columns")
     transport_shape_truck = generate_periodic_profiles(
         dt_index=snapshots,
         nodes=nodes,
-        weekly_profile=traffic_truck.values,
+        weekly_profile=traffic_hd.values,
     )
     transport_shape_truck = transport_shape_truck / transport_shape_truck.sum() 
+
+    traffic_bus = pd.read_csv(traffic_fn_bus, skiprows=2, usecols=["count"]).squeeze("columns")
+    transport_shape_bus = generate_periodic_profiles(
+        dt_index=snapshots,
+        nodes=nodes,
+        weekly_profile=traffic_bus.values,
+    )
+    transport_shape_bus = transport_shape_bus / transport_shape_bus.sum()
+
+    traffic_lfw = pd.read_csv(traffic_fn_lfw, skiprows=2, usecols=["count"]).squeeze("columns")
+    transport_shape_van = generate_periodic_profiles(
+        dt_index=snapshots,
+        nodes=nodes,
+        weekly_profile=traffic_lfw.values,
+    )
+    transport_shape_van = transport_shape_van / transport_shape_van.sum()
+
 
     pkm = nodal_transport_data["passenger_car_pkm"]
     ppm = nodal_transport_data["passengers_per_movement"]
@@ -143,6 +167,7 @@ def build_transport_demand(traffic_fn_passenger, traffic_fn_truck, nodes, nodal_
 
     km_100km = km_driven / 100.0
 
+    # Passenger: PKW weekly profile
     demand_passenger = transport_shape_passenger.multiply(km_100km) * nyears
 
     # Truck demand from HGV tonne-km and load factor
@@ -154,6 +179,7 @@ def build_transport_demand(traffic_fn_passenger, traffic_fn_truck, nodes, nodal_
         raise ValueError("hgv_t_per_movement contains zero or NaN values after filling.")
     truck_movements = hgv_mtkm / hgv_t_per_movement
     truck_100km = truck_movements / 100.0
+    # Truck (HGV): HD weekly profile
     demand_truck = transport_shape_truck.multiply(truck_100km) * nyears
 
     # Van demand from LCV tonne-km and load factor
@@ -167,7 +193,8 @@ def build_transport_demand(traffic_fn_passenger, traffic_fn_truck, nodes, nodal_
 
     van_movements = lcv_mtkm / lcv_t_per_movement
     van_100km = van_movements / 100.0
-    demand_van = transport_shape_truck.multiply(van_100km) * nyears
+    # Van (LCV): LFW weekly profile
+    demand_van = transport_shape_van.multiply(van_100km) * nyears
 
     # Bus demand from bus passenger-km and load factor
     bus_mpkm = nodal_transport_data["bus_mpkm"]
@@ -184,7 +211,8 @@ def build_transport_demand(traffic_fn_passenger, traffic_fn_truck, nodes, nodal_
 
     bus_movements = bus_mpkm / bus_passengers_per_movement
     bus_100km = bus_movements / 100.0
-    demand_bus = transport_shape_truck.multiply(bus_100km) * nyears
+    # Bus: bus weekly profile
+    demand_bus = transport_shape_bus.multiply(bus_100km) * nyears
 
     demand_passenger.columns = pd.Index(demand_passenger.columns, name=None)
     demand_truck.columns = pd.Index(demand_truck.columns, name=None)

@@ -2592,19 +2592,159 @@ def add_ice_cars(
         p_nom_extendable=True,
     )
 
+def load_land_transport_fuel_shares_table(
+    path: str, investment_year: int
+) -> pd.DataFrame:
+    """
+    Load per-country, per-segment land transport fuel shares for one planning year.
+
+    Expects the same CSV layout as ``data/agg_p_nom_minmax.csv``: two header rows
+    (year, then electric | fuel_cell | ice) and two index columns (country, segment).
+
+    Parameters
+    ----------
+    path : str
+        Path to ``land_transport_fuel_shares.csv`` (or equivalent).
+    investment_year : int
+        Planning horizon year (e.g. 2030).
+
+    Returns
+    -------
+    pd.DataFrame
+        Index (country, segment); columns electric, fuel_cell, ice (numeric, sum ~ 1 per row).
+    """
+    df = pd.read_csv(path, index_col=[0, 1], header=[0, 1])
+
+    if df.index.names != ["country", "segment"]:
+        df.index.names = ["country", "segment"]
+
+    year_levels = df.columns.get_level_values(0)
+    candidates = [str(investment_year), investment_year]
+    year_key = next((k for k in candidates if k in year_levels), None)
+    if year_key is None:
+        available = sorted({str(y) for y in year_levels.unique()})
+        raise KeyError(
+            f"Planning year {investment_year!r} not in land transport fuel shares "
+            f"columns; available years: {available}"
+        )
+
+    block = df[year_key]
+    expected_cols = ["electric", "fuel_cell", "ice"]
+    missing = [c for c in expected_cols if c not in block.columns]
+    if missing:
+        raise ValueError(
+            f"After selecting year {year_key!r}, expected columns {expected_cols}, "
+            f"missing {missing}; got {list(block.columns)}"
+        )
+
+    block = block[expected_cols].apply(pd.to_numeric, errors="coerce")
+    if block.isna().any().any():
+        bad = block[block.isna().any(axis=1)]
+        raise ValueError(
+            "Non-numeric or missing values in land transport fuel shares for year "
+            f"{year_key}:\n{bad}"
+        )
+
+    row_sums = block.sum(axis=1)
+    if not np.allclose(row_sums, 1.0, rtol=0, atol=1e-6):
+        worst = (row_sums - 1.0).abs().max()
+        logger.warning(
+            "Land transport fuel shares rows do not sum to 1 (max abs deviation "
+            f"{worst:.2e}); check CSV for year {year_key}."
+        )
+
+    return block
+
+def build_land_transport_per_node_shares(
+    n: pypsa.Network,
+    nodes,
+    options: dict,
+    investment_year: int,
+    land_transport_fuel_shares_file: str | None,
+) -> dict[str, dict[str, pd.Series]]:
+    """
+    Per spatial node, electric / fuel_cell / ice shares for each transport segment.
+    If ``options["land_transport_fuel_shares_enable"]`` is true and ``path`` is set,
+    loads ``load_land_transport_fuel_shares_table`` and maps ``n.buses.country``
+    to nodes; missing values use the same YAML keys as ``get(..., investment_year)``.
+    Otherwise all shares are scalar fallbacks broadcast to ``nodes``.
+    """
+    nodes_idx = pd.Index(nodes)
+    bus_country = n.buses.loc[nodes_idx, "country"]
+    keymap_passenger = {
+        "electric": "land_transport_electric_share",
+        "fuel_cell": "land_transport_fuel_cell_share",
+        "ice": "land_transport_ice_share",
+    }
+    keymap_freight = {
+        "passenger": keymap_passenger,
+        "truck": {
+            "electric": "land_transport_truck_electric_share",
+            "fuel_cell": "land_transport_truck_fuel_cell_share",
+            "ice": "land_transport_truck_ice_share",
+        },
+        "van": {
+            "electric": "land_transport_van_electric_share",
+            "fuel_cell": "land_transport_van_fuel_cell_share",
+            "ice": "land_transport_van_ice_share",
+        },
+        "bus": {
+            "electric": "land_transport_bus_electric_share",
+            "fuel_cell": "land_transport_bus_fuel_cell_share",
+            "ice": "land_transport_bus_ice_share",
+        },
+    }
+    fuels = ("electric", "fuel_cell", "ice")
+    segments = ("passenger", "truck", "van", "bus")
+    def fallback_scalar(segment: str, fuel: str) -> float:
+        opt_key = keymap_freight[segment][fuel]
+        return float(get(options[opt_key], investment_year))
+    use_csv = bool(
+        options.get("land_transport_fuel_shares_enable")
+        and land_transport_fuel_shares_file
+        and os.path.isfile(land_transport_fuel_shares_file)
+    )
+    fuel_tbl = None
+    if use_csv:
+        fuel_tbl = load_land_transport_fuel_shares_table(
+            land_transport_fuel_shares_file, investment_year
+        )
+    out: dict[str, dict[str, pd.Series]] = {
+        seg: {f: pd.Series(dtype=float) for f in fuels} for seg in segments
+    }
+    for segment in segments:
+        for fuel in fuels:
+            fb = fallback_scalar(segment, fuel)
+            s = pd.Series(fb, index=nodes_idx, dtype=float)
+            if fuel_tbl is not None:
+                try:
+                    by_country = fuel_tbl.xs(segment, level="segment")[fuel]
+                except KeyError:
+                    by_country = fuel_tbl.xs(segment, level=1)[fuel]
+                mapped = bus_country.map(by_country)
+                s = mapped.fillna(fb).astype(float)
+                s.index = nodes_idx
+            out[segment][fuel] = s.reindex(nodes_idx)
+    return out
+
+
 
 def add_land_transport(
     n,
     costs,
     transport_demand_file,
     transport_data_file,
-    avail_profile_file,
+    avail_profile_pkw_file,
+    avail_profile_bus_file,
+    avail_profile_hd_file,
+    avail_profile_lfw_file,
     dsm_profile_file,
     temp_air_total_file,
     cf_industry,
     options,
     investment_year,
     nodes,
+    land_transport_fuel_shares_file: str | None = None,
 ) -> None:
     """
     Add land transport demand and infrastructure to the network.
@@ -2619,10 +2759,18 @@ def add_land_transport(
         Path to CSV file containing transport demand in driven km [100 km]
     transport_data_file : str
         Path to CSV file containing number of cars per region
-    avail_profile_file : str
-        Path to CSV file containing availability profiles
+    avail_profile_pkw_file : str
+        Path to CSV with BEV availability profile derived from PKW weekly traffic.
+    avail_profile_bus_file : str
+        Path to CSV with BEV availability profile derived from bus weekly traffic.
+    avail_profile_hd_file : str
+        Path to CSV with BEV availability profile derived from heavy-duty (HD) weekly traffic.
+    avail_profile_lfw_file : str
+        Path to CSV with BEV availability profile derived from light-freight (LFW) weekly traffic.
     dsm_profile_file : str
         Path to CSV file containing demand-side management profiles
+    land_transport_fuel_shares_file : str | None
+        CSV file with fuel shares for each segment and country
     temp_air_total_file : str
         Path to netCDF file containing air temperature data
     options : dict
@@ -2658,42 +2806,29 @@ def add_land_transport(
     number_truck = transport_data["hgv_stock"]
     number_van = transport_data["lcv_stock"]
     number_bus = transport_data["bus_stock"]
-    avail_profile = pd.read_csv(avail_profile_file, index_col=0, parse_dates=True)
+    avail_profile_pkw = pd.read_csv(avail_profile_pkw_file, index_col=0, parse_dates=True)
+    avail_profile_bus = pd.read_csv(avail_profile_bus_file, index_col=0, parse_dates=True)
+    avail_profile_hd = pd.read_csv(avail_profile_hd_file, index_col=0, parse_dates=True)
+    avail_profile_lfw = pd.read_csv(avail_profile_lfw_file, index_col=0, parse_dates=True)
     dsm_profile = pd.read_csv(dsm_profile_file, index_col=0, parse_dates=True)
+    
+    share_node = build_land_transport_per_node_shares(
+    n=n,
+    nodes=nodes,
+    options=options,
+    investment_year=investment_year,
+    land_transport_fuel_shares_file=land_transport_fuel_shares_file,
+    )
 
-    # exogenous share of passenger car type
-    engine_types = ["fuel_cell", "electric", "ice"]
-    shares_passenger = pd.Series(dtype=float)
-    for engine in engine_types:
-        share_key = f"land_transport_{engine}_share"
-        shares_passenger[engine] = get(options[share_key], investment_year)
-        if logger:
-            logger.info(f"passenger {engine} share: {shares_passenger[engine] * 100}%")
-    check_land_transport_shares(shares_passenger)
-
-    shares_truck = pd.Series(dtype=float)
-    for engine in engine_types:
-        share_key = f"land_transport_truck_{engine}_share"
-        shares_truck[engine] = get(options[share_key], investment_year)
-        if logger:
-            logger.info(f"truck {engine} share: {shares_truck[engine] * 100}%")
-    check_land_transport_shares(shares_truck)
-
-    shares_van = pd.Series(dtype=float)
-    for engine in engine_types:
-        share_key = f"land_transport_van_{engine}_share"
-        shares_van[engine] = get(options[share_key], investment_year)
-        if logger:
-            logger.info(f"van {engine} share: {shares_van[engine] * 100}%")
-    check_land_transport_shares(shares_van)
-
-    shares_bus = pd.Series(dtype=float)
-    for engine in engine_types:
-        share_key = f"land_transport_bus_{engine}_share"
-        shares_bus[engine] = get(options[share_key], investment_year)
-        if logger:
-            logger.info(f"bus {engine} share: {shares_bus[engine] * 100}%")
-    check_land_transport_shares(shares_bus)
+     # Optional: log mass-weighted mean share (scalar summary)
+    if logger:
+        for segment in ("passenger", "truck", "van", "bus"):
+            for fuel in ("electric", "fuel_cell", "ice"):
+                logger.info(
+                    f"{segment} mean {fuel} share: "
+                    f"{share_node[segment][fuel].mean() * 100:.2f}%"
+                )
+    
 
     p_set_passenger = transport["passenger"][nodes]
     p_set_truck = transport["truck"][nodes]
@@ -2704,13 +2839,13 @@ def add_land_transport(
     # temperature for correction factor for heating/cooling
     temperature = xr.open_dataarray(temp_air_total_file).to_pandas()
 
-    if shares_passenger["electric"] > 0:
+    if (share_node["passenger"]["electric"] > 0).any():
         add_EVs(
             n,
-            avail_profile,
+            avail_profile_pkw,
             dsm_profile,
             p_set_passenger,
-            shares_passenger["electric"],
+            share_node["passenger"]["electric"],
             number_cars_passenger,
             temperature,
             spatial,
@@ -2718,22 +2853,22 @@ def add_land_transport(
             mode="passenger",
         )
 
-    if shares_passenger["fuel_cell"] > 0:
+    if (share_node["passenger"]["fuel_cell"] > 0).any():
         add_fuel_cell_cars(
             n=n,
             p_set=p_set_passenger,
-            fuel_cell_share=shares_passenger["fuel_cell"],
+            fuel_cell_share=share_node["passenger"]["fuel_cell"],
             temperature=temperature,
             options=options,
             spatial=spatial,
             mode="passenger",
         )
-    if shares_passenger["ice"] > 0:
+    if (share_node["passenger"]["ice"] > 0).any():
         add_ice_cars(
             n,
             costs,
             p_set_passenger,
-            shares_passenger["ice"],
+            share_node["passenger"]["ice"],
             temperature,
             cf_industry,
             spatial,
@@ -2741,35 +2876,35 @@ def add_land_transport(
             mode="passenger",
         )
 
-    if shares_truck["electric"] > 0:
+    if (share_node["truck"]["electric"] > 0).any():
         add_EVs(
             n,
-            avail_profile,   # temporary reuse
+            avail_profile_hd,   
             dsm_profile,     # temporary reuse
             p_set_truck,
-            shares_truck["electric"],
+            share_node["truck"]["electric"],
             number_truck,     
             temperature,
             spatial,
             options,
             mode="truck",
         )    
-    if shares_truck["fuel_cell"] > 0:
+    if (share_node["truck"]["fuel_cell"] > 0).any():
         add_fuel_cell_cars(
             n=n,
             p_set=p_set_truck,
-            fuel_cell_share=shares_truck["fuel_cell"],
+            fuel_cell_share=share_node["truck"]["fuel_cell"],
             temperature=temperature,
             options=options,
             spatial=spatial,
             mode="truck",
         )
-    if shares_truck["ice"] > 0:
+    if (share_node["truck"]["ice"] > 0).any():
         add_ice_cars(
             n,
             costs,
             p_set_truck,
-            shares_truck["ice"],
+            share_node["truck"]["ice"],
             temperature,
             cf_industry,
             spatial,
@@ -2777,13 +2912,13 @@ def add_land_transport(
             mode="truck",
         )   
 
-    if shares_van["electric"] > 0:
+    if (share_node["van"]["electric"] > 0).any():
         add_EVs(
             n,
-            avail_profile,   # temporary reuse
+            avail_profile_lfw,  
             dsm_profile,     # temporary reuse
             p_set_van,
-            shares_van["electric"],
+            share_node["van"]["electric"] ,
             number_van,
             temperature,
             spatial,
@@ -2791,23 +2926,23 @@ def add_land_transport(
             mode="van",
         )
 
-    if shares_van["fuel_cell"] > 0:
+    if (share_node["van"]["fuel_cell"] > 0).any():
         add_fuel_cell_cars(
             n=n,
             p_set=p_set_van,
-            fuel_cell_share=shares_van["fuel_cell"],
+            fuel_cell_share=share_node["van"]["fuel_cell"],
             temperature=temperature,
             options=options,
             spatial=spatial,
             mode="van",
         )
 
-    if shares_van["ice"] > 0:
+    if (share_node["van"]["ice"] > 0).any():
         add_ice_cars(
             n,
             costs,
             p_set_van,
-            shares_van["ice"],
+            share_node["van"]["ice"],
             temperature,
             cf_industry,
             spatial,
@@ -2816,13 +2951,13 @@ def add_land_transport(
         )
 
 
-    if shares_bus["electric"] > 0:
+    if (share_node["bus"]["electric"] > 0).any():
         add_EVs(
             n,
-            avail_profile,   # temporary reuse
+            avail_profile_bus, 
             dsm_profile,     # temporary reuse
             p_set_bus,
-            shares_bus["electric"],
+            share_node["bus"]["electric"],
             number_bus,
             temperature,
             spatial,
@@ -2830,23 +2965,23 @@ def add_land_transport(
             mode="bus",
         )
 
-    if shares_bus["fuel_cell"] > 0:
+    if (share_node["bus"]["fuel_cell"] > 0).any():
         add_fuel_cell_cars(
             n=n,
             p_set=p_set_bus,
-            fuel_cell_share=shares_bus["fuel_cell"],
+            fuel_cell_share=share_node["bus"]["fuel_cell"],
             temperature=temperature,
             options=options,
             spatial=spatial,
             mode="bus",
         )
 
-    if shares_bus["ice"] > 0:
+    if (share_node["bus"]["ice"] > 0).any():
         add_ice_cars(
             n,
             costs,
             p_set_bus,
-            shares_bus["ice"],
+            share_node["bus"]["ice"],
             temperature,
             cf_industry,
             spatial,
@@ -6987,8 +7122,14 @@ if __name__ == "__main__":
             costs=costs,
             transport_demand_file=snakemake.input.transport_demand,
             transport_data_file=snakemake.input.transport_data,
-            avail_profile_file=snakemake.input.avail_profile,
+            avail_profile_pkw_file=snakemake.input.avail_profile_pkw,
+            avail_profile_bus_file=snakemake.input.avail_profile_bus,
+            avail_profile_hd_file=snakemake.input.avail_profile_hd,
+            avail_profile_lfw_file=snakemake.input.avail_profile_lfw,
             dsm_profile_file=snakemake.input.dsm_profile,
+            land_transport_fuel_shares_file=getattr(
+                snakemake.input, "land_transport_fuel_shares", None
+            ),
             temp_air_total_file=snakemake.input.temp_air_total,
             cf_industry=cf_industry,
             options=options,

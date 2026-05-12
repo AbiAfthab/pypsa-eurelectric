@@ -1681,8 +1681,12 @@ rule prepare_sector_network:
         shipping_demand=resources("shipping_demand_s_{clusters}.csv"),
         transport_demand=resources("transport_demand_s_{clusters}.csv"),
         transport_data=resources("transport_data_s_{clusters}.csv"),
-        avail_profile=resources("avail_profile_s_{clusters}.csv"),
+        avail_profile_pkw=resources("avail_profile_pkw_s_{clusters}.csv"),
+        avail_profile_bus=resources("avail_profile_bus_s_{clusters}.csv"),
+        avail_profile_hd=resources("avail_profile_hd_s_{clusters}.csv"),
+        avail_profile_lfw=resources("avail_profile_lfw_s_{clusters}.csv"),
         dsm_profile=resources("dsm_profile_s_{clusters}.csv"),
+        land_transport_fuel_shares="data/land_transport_fuel_shares.csv",
         heat_dsm_profile=resources(
             "residential_heat_dsm_profile_total_base_s_{clusters}.csv"
         ),
