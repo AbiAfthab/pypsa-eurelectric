@@ -6,7 +6,7 @@
 tutorial: true
 
 run:
-  name: "baseline_no_flex_28c_3h"
+  name: "inflexible_data_centers"
   disable_progressbar: true
   shared_resources:
     policy: false
@@ -28,7 +28,7 @@ data_center:
   load:
     profile: High Voltage Import
     profile_year: 2024
-    method: max
+    method: mean
   "on-site generation":
     enable: false
     p_pct_nom: 0.2
@@ -38,4 +38,4 @@ data_center:
     p_pct_nom: 0.2
     shift_hours: 6
     reference_technology: battery
-  grid_connection: Bidirectional
+  grid_connection: "Grid to data center"
