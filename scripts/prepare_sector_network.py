@@ -2696,6 +2696,8 @@ def build_land_transport_per_node_shares(
     }
     fuels = ("electric", "fuel_cell", "ice")
     segments = ("passenger", "truck", "van", "bus")
+
+    
     def fallback_scalar(segment: str, fuel: str) -> float:
         opt_key = keymap_freight[segment][fuel]
         return float(get(options[opt_key], investment_year))
