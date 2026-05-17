@@ -42,8 +42,10 @@ scenario:
   - ""
   sector_opts:
   - ""
-  planning_horizons:
+  planning_horizons: 
   - 2050
+  - 2040
+  - 2030
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#countries
 countries:
@@ -1138,7 +1140,7 @@ clustering:
     buses: {}
   temporal:
     resolution_elec: false
-    resolution_sector: false
+    resolution_sector: 2190SEG
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#adjustments
 adjustments:
@@ -1499,7 +1501,7 @@ data_center:
     shift_hours: 6
   load:
     profile: High Voltage Import
-    year: 2024
+    profile_year: 2024
     method: max
   "on-site generation":
     enable: false
