@@ -15,7 +15,7 @@
 
 rule build_data_center_demand:
     message:
-        "Creating a nodal distribution of data center demand (annualized)"
+        "TESTING TESTING TESTING //Creating a nodal distribution of data center demand (annualized)"
     params:
         demand_year=config_provider("scenario", "planning_horizons"),
     input:

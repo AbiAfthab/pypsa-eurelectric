@@ -1797,7 +1797,7 @@ rule prepare_sector_network:
             else []
         ),
         data_center_demand_profile=lambda w: (
-            "data/eurelectric_data_centers/archive/v0.1/manual/low-voltage-data-center-profile.csv"
+            "data/eurelectric_data_centers/archive/v0.1/manual/ukpn-data-centre-demand-profiles.csv"
         ),
     output:
         resources(
