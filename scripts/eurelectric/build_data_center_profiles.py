@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 def build_nodal_data_center_demand(country_demand_fn, pop_layout, demand_year):
+    demand_year = str(demand_year[0])
+    
     # get annual energy consumption per country/node
     demand_per_ct = pd.read_csv(country_demand_fn, index_col=0, skiprows=1)
     demand_per_ct *= 1e6

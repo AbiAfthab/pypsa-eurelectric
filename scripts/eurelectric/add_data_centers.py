@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 def get_load_profile(
     profile,
-    year,
+    profile_year,
     method,
-    profile_fn,
+    profile_fn="data/eurelectric_data_centers/archive/v0.1/manual/ukpn-data-centre-demand-profiles.csv",
 ):
     # get annual utilization-hours (applied to all countries equally)
     demand_profile = pd.read_csv(
@@ -31,15 +31,15 @@ def get_load_profile(
         ],
     )
     demand_profile = (
-        demand_profile.xs(profile, level="cleansed_voltage_level")
+        demand_profile.xs(profile, level="cleansed_voltage_level")['hh_utilisation_ratio']
         .groupby(level="utc_timestamp")
         .agg(method)
     )
-    demand_profile = demand_profile.loc[str(year)]
+    demand_profile = demand_profile.loc[str(profile_year)]
 
     # get rid of subhourly data since it isn't used in pypsa
     demand_profile = demand_profile[demand_profile.index.minute == 0]
-    return demand_profile["hh_utilisation_ratio"]
+    return demand_profile
 
 
 def attach_data_centers(n, load_nodal_distribution_fn, params):
@@ -58,14 +58,14 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
     utilization_hours = load_profile.sum()
 
     # review: particularly check if this logic is acceptable the data for the load profile is missing a few timestamps
-    year_delta = int(load["year"] - n.snapshots.year.min())
+    year_delta = int(load["profile_year"] - n.snapshots.year.min())
     load_profile.index -= pd.DateOffset(years=year_delta)
     load_profile = load_profile.groupby(level=0).mean()
     load_profile = load_profile.resample("h").ffill()
     load_profile = load_profile.loc[n.snapshots]
     nodal_distribution = pd.read_csv(load_nodal_distribution_fn, index_col=["name"])
 
-    load_nom = nodal_distribution["total_demand_mwh"] / utilization_hours
+    load_nom = nodal_distribution / utilization_hours
     load = pd.DataFrame(
         np.outer(load_profile.values, load_nom.values),
         index=load_profile.index,
@@ -133,7 +133,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
         "Load",
         name=data_center_demand_buses,
         bus=data_center_demand_buses,
-        p_nom=load_nom.values,
+        # p_nom=load_nom.values,
         p_set=load.values,
     )
 
@@ -144,8 +144,11 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
             suffix=" (DSR)",
             bus=data_center_demand_buses,
             e_cyclic=True,
-            e_nom=load_nom.values * dsr["p_pct_nom"] * dsr["shift_hours"],
+            e_nom=load_nom.values.flatten() * dsr['p_pct_nom'] * dsr['shift_hours'],    
+            capital_cost=dsr["capital_cost"],
+            marginal_cost=dsr["marginal_cost"],
         )
+        
 
     # add onsite storage
     if storage["enable"]:
@@ -156,9 +159,8 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
             name=buses,
             suffix=" data center store",
             bus=buses,
-            e_nom=load_nom.values * storage["p_pct_nom"] * storage["shift_hours"],
-            p_nom=load_nom.values * storage["p_pct_nom"],
-            efficiency=ref_stores["efficiency"].mean(),
+            e_nom=load_nom.values.flatten() * storage["p_pct_nom"] * storage["shift_hours"],
+            p_nom=load_nom.values.flatten() * storage["p_pct_nom"],
         )
 
     # add onsite generation
@@ -174,7 +176,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
             efficiency=ref_generators["efficiency"].mean(),
             bus2="co2 atmosphere",
             efficiency2=ref_generators["efficiency2"].mean(),
-            p_nom=load_nom.values * storage["p_pct_nom"],
+            p_nom=load_nom.values.flatten() * generation["p_pct_nom"],
             marginal_cost=ref_generators["marginal_cost"].mean(),
             carrier=generation["reference_technology"],
         )

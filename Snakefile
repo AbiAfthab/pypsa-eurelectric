@@ -78,7 +78,7 @@ include: "rules/build_sector.smk"
 include: "rules/solve_electricity.smk"
 include: "rules/postprocess.smk"
 include: "rules/development.smk"
-include: "rules/add_data_centers.smk"
+include: "rules/build_data_center_demand.smk"
 
 
 if config["foresight"] == "overnight":
@@ -228,12 +228,7 @@ rule all:
         lambda w: balance_map_paths("static", w),
         lambda w: balance_map_paths("interactive", w),
 
-        expand(
-            resources("networks/base_s_{clusters}___{planning_horizons}_dc.nc"),
-            run=config["run"]["name"],
-            **config["scenario"],
-        )
-    default_target: True
+    # default_target: True
 
 
 rule create_scenarios:
