@@ -1612,10 +1612,10 @@ def insert_electricity_distribution_grid(
         
         logger.info(f"Moved {len(industry_dsr_charge_links)} charge links and {len(industry_dsr_discharge_links)} discharge links to low voltage buses")
 
-    bevs = n.links.index[n.links.carrier == "BEV charger"]
+    bevs = n.links.index[n.links.carrier.str.contains("BEV charger", na=False)]
     n.links.loc[bevs, "bus0"] += " low voltage"
 
-    v2gs = n.links.index[n.links.carrier == "V2G"]
+    v2gs = n.links.index[n.links.carrier.str.startswith("V2G", na=False)]
     n.links.loc[v2gs, "bus1"] += " low voltage"
 
     hps = n.links.index[n.links.carrier.str.contains("heat pump")]

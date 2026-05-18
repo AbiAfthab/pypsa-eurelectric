@@ -1021,6 +1021,20 @@ def rename_techs(label: str) -> str:
     for old, new in rename.items():
         if old == label:
             label = new
+
+    #For plotting all transport segments        
+    TRANSPORT_SEGMENTS = {"passenger", "truck", "van", "bus"}
+
+    for prefix in (
+        "BEV charger ",
+        "V2G ",
+        "land transport EV ",
+    ):
+        if label.startswith(prefix):
+            segment = label[len(prefix) :]
+            if segment in TRANSPORT_SEGMENTS:
+                label = prefix.strip()
+                break
     return label
 
 
