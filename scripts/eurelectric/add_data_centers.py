@@ -62,7 +62,6 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
     # review: particularly check if this logic is acceptable the data for the load profile is missing a few timestamps
     year_delta = int(load["profile_year"] - n.snapshots.year.min())
     load_profile.index -= pd.DateOffset(years=year_delta)
-    load_profile = load_profile.groupby(level=0).mean()
     load_profile = load_profile.resample("h").ffill()
     load_profile = load_profile.loc[n.snapshots]
     nodal_distribution = pd.read_csv(load_nodal_distribution_fn, index_col=["name"])
@@ -73,7 +72,6 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
         index=load_profile.index,
         columns=load_nom.index,
     )
-    breakpoint()
     zero_cols = load.columns[(load == 0).all()]
     load = load.drop(zero_cols, axis=1)
     load_nom = load_nom.drop(zero_cols, axis=0)
@@ -165,6 +163,9 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
             * storage["p_pct_nom"]
             * storage["shift_hours"],
             p_nom=load_nom.values.flatten() * storage["p_pct_nom"],
+            marginal_cost=ref_stores["marginal_cost"],
+            capital_cost=ref_stores["capital_cost"],
+            carrier=storage["reference_technology"],
         )
 
     # add onsite generation
@@ -182,6 +183,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
             efficiency2=ref_generators["efficiency2"].mean(),
             p_nom=load_nom.values.flatten() * generation["p_pct_nom"],
             marginal_cost=ref_generators["marginal_cost"].mean(),
+            capital_cost=ref_generators["capital_cost"],
             carrier=generation["reference_technology"],
         )
 
