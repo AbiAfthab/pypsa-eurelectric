@@ -3,16 +3,12 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-tutorial: true
-
 run:
   name: "flexible_data_centers"
   disable_progressbar: true
   shared_resources:
     policy: false
   shared_cutouts: true
-
-countries: ['AT', 'BE', 'BG', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'NL', 'NO', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK']
 
 data_center:
   dsr:
