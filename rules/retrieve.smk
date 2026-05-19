@@ -1717,29 +1717,23 @@ if (FFE_LOAD_PROFILES_DATASET := dataset_version("ffe_load_profiles"))["source"]
 
 
 
-if (UKPN_DATASET := dataset_version("eurelectric_data_centers"))["source"] in [
-    "archive"
+if (UKPN_DATA_CENTERS_DATASET := dataset_version("ukpn_data_centers"))["source"] in [
+    "primary"
 ]:
 
-    rule retrieve_data_center_demand_profiles:
+    rule retrieve_ukpn_data_center_demand_profiles:
+        message:
+            "Retrieving UKPN data center demand profiles data"
+        input:
+            csv=storage(UKPN_DATA_CENTERS_DATASET["url"]),
         output:
-            "data/eurelectric_data_centers/archive/v0.1/manual/ukpn-data-centre-demand-profiles.csv",  # TODO change location from manual/ across directory
-        log:
-            "logs/retrieve_data_center_demand_profiles",
+            csv=f"{UKPN_DATA_CENTERS_DATASET['folder']}/ukpn-data-center-demand-profiles.csv",
+        threads: 1
         resources:
             mem_mb=1000,
-        retries: 2
+        log:
+            "logs/retrieve_data_center_demand_profiles",
+        benchmark:
+            "benchmarks/retrieve_data_center_demand_profiles"
         run:
-            import pandas as pd
-
-            api_key = os.environ.get("UKPN_API_KEY")
-            headers = {
-                "Authorization": f"Apikey {api_key}",
-                "Content-Type": "application/json",
-            }
-            data = requests.get(
-                "https://ukpowernetworks.opendatasoft.com/api/explore/v2.1/catalog/datasets/ukpn-data-centre-demand-profiles/exports/csv/?delimiter=%2C&lang=en&timezone=America%2FDenver&use_labels=true",
-                headers=headers,
-            ).json()["results"]
-
-            pd.DataFrame(data).to_csv(output[0], index=False)
+            copy2(input["csv"], output["csv"])
