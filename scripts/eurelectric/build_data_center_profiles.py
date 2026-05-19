@@ -15,8 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 def build_nodal_data_center_demand(country_demand_fn, pop_layout, demand_year):
-    demand_year = str(demand_year[0])
-    
     # get annual energy consumption per country/node
     demand_per_ct = pd.read_csv(country_demand_fn, index_col=0, skiprows=1)
     demand_per_ct *= 1e6
@@ -25,7 +23,7 @@ def build_nodal_data_center_demand(country_demand_fn, pop_layout, demand_year):
         f"Missing data center demand for countries: {set(demand_per_ct.index) ^ set(pop_layout.ct)}, setting to zero."
     )
 
-    per_node_demand = demand_per_ct[demand_year].reindex(pop_layout.ct).fillna(0.0)
+    per_node_demand = demand_per_ct[str(demand_year)].reindex(pop_layout.ct).fillna(0.0)
     per_node_demand.index = pop_layout.index
     per_node_demand = pop_layout["fraction"] * per_node_demand
     return per_node_demand
@@ -35,7 +33,9 @@ if __name__ == "__main__":
     if "snakemake" not in globals():
         from scripts._helpers import mock_snakemake
 
-        snakemake = mock_snakemake("build_data_center_demand", clusters=50)
+        snakemake = mock_snakemake(
+            "build_data_center_demand", clusters=37, planning_horizons=2030
+        )
     configure_logging(snakemake)
     set_scenario_config(snakemake)
 
@@ -43,6 +43,8 @@ if __name__ == "__main__":
     pop_layout = pd.read_csv(snakemake.input.clustered_pop_layout, index_col=0)
 
     nodal_data_center_data = build_nodal_data_center_demand(
-        snakemake.input.data_center_demand_fn, pop_layout, snakemake.params.demand_year
+        snakemake.input.data_center_demand_fn,
+        pop_layout,
+        snakemake.wildcards.planning_horizons,
     )
     nodal_data_center_data.to_csv(snakemake.output.data_center_demand)

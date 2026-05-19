@@ -100,10 +100,6 @@ class _DataCenterLoadConfig(ConfigModel):
         "max",
         description="Aggregation method for data center load profiles provided by the UKPN dataset",
     )
-    demand_year: int = Field(
-        2030,
-        description="Year of the demand data to use for annualized country level demand.",
-    )
 
 
 class DataCenterConfigSection(BaseModel):

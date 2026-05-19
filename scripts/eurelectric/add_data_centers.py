@@ -31,7 +31,9 @@ def get_load_profile(
         ],
     )
     demand_profile = (
-        demand_profile.xs(profile, level="cleansed_voltage_level")['hh_utilisation_ratio']
+        demand_profile.xs(profile, level="cleansed_voltage_level")[
+            "hh_utilisation_ratio"
+        ]
         .groupby(level="utc_timestamp")
         .agg(method)
     )
@@ -71,6 +73,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
         index=load_profile.index,
         columns=load_nom.index,
     )
+    breakpoint()
     zero_cols = load.columns[(load == 0).all()]
     load = load.drop(zero_cols, axis=1)
     load_nom = load_nom.drop(zero_cols, axis=0)
@@ -144,11 +147,10 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
             suffix=" (DSR)",
             bus=data_center_demand_buses,
             e_cyclic=True,
-            e_nom=load_nom.values.flatten() * dsr['p_pct_nom'] * dsr['shift_hours'],    
+            e_nom=load_nom.values.flatten() * dsr["p_pct_nom"] * dsr["shift_hours"],
             capital_cost=dsr["capital_cost"],
             marginal_cost=dsr["marginal_cost"],
         )
-        
 
     # add onsite storage
     if storage["enable"]:
@@ -159,7 +161,9 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
             name=buses,
             suffix=" data center store",
             bus=buses,
-            e_nom=load_nom.values.flatten() * storage["p_pct_nom"] * storage["shift_hours"],
+            e_nom=load_nom.values.flatten()
+            * storage["p_pct_nom"]
+            * storage["shift_hours"],
             p_nom=load_nom.values.flatten() * storage["p_pct_nom"],
         )
 
