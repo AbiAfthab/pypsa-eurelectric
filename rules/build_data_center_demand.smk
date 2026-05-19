@@ -2,16 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-# rule retrieve_data_center_demand_profiles:
-#     message:
-#         "Retrieving data center half hourly demand profiles from UKPN"
-#     input:
-#         xlsx=storage("https://ukpowernetworks.opendatasoft.com/api/explore/v2.1/catalog/datasets/ukpn-data-centre-demand-profiles/attachments/data_triage_data_centre_profiles_half_hourly_xlsx")
-#     output:
-#         xlsx="data/eurelectric_data_centers/load_profiles_half_hourly.xlsx"
-#     run:
-#         copy2(input['xlsx'], output['xlsx'])
-
 
 rule build_data_center_demand:
     message:
@@ -26,4 +16,4 @@ rule build_data_center_demand:
             "eurelectric_data_centers/data_center_demand_s_{clusters}_{planning_horizons}.csv"
         ),
     script:
-        scripts("eurelectric/build_data_center_profiles.py")
+        scripts("eurelectric/build_data_center_demand.py")
