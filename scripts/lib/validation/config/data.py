@@ -272,6 +272,6 @@ class DataConfig(BaseModel):
         description="Entsoepy bidding zones data source configuration.",
     )
     ukpn_data_centers: _DataSourceConfig = Field(
-        default_factory=_DataSourceConfig,
+        default_factory=lambda: _DataSourceConfig(source="primary"),
         description="UKPN data for data center utilisation ratios.",
     )

@@ -1479,7 +1479,7 @@ data:
     source: archive
     version: latest
   ukpn_data_centers:
-    source: archive
+    source: primary
     version: latest
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#overpass_api
