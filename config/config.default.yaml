@@ -1478,7 +1478,7 @@ data:
   bidding_zones_entsoepy:
     source: archive
     version: latest
-  eurelectric_data_centers:
+  ukpn_data_centers:
     source: archive
     version: latest
 
