@@ -50,6 +50,7 @@ eu_nuts2013,2015-12-03,primary,latest supported,2025-12-02, ,https://gisco-servi
 eu_nuts2013,2015-12-03,archive,latest supported,2026-01-13,,https://data.pypsa.org/workflows/eur/eu_nuts2013/2015-12-03/ref-nuts-2013-03m.geojson.zip
 eu_nuts2021,2021-01-01,primary,latest supported,2025-12-02,,https://gisco-services.ec.europa.eu/distribution/v2/nuts/download/ref-nuts-2021-01m.geojson.zip
 eu_nuts2021,2021-01-01,archive,latest supported,2026-01-13,,https://data.pypsa.org/workflows/eur/eu_nuts2021/2021-01-01/ref-nuts-2021-01m.geojson.zip
+eurelectric_data_centers,v0.1,archive,latest supported,2026-05-18,,https://ukpowernetworks.opendatasoft.com/api/explore/v2.1/catalog/datasets/ukpn-data-centre-demand-profiles/records/?lang=en&limit=10&offset=0
 eurostat_balances,unknown,primary,latest supported,2026-02-04,,https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/data/nrg_bal_c?format=TSV&compressed=true
 eurostat_balances,2026-02,archive,latest supported,2026-02-09,,https://data.pypsa.org/workflows/eur/eurostat_balances/2026-02/nrg_bal_c
 eurostat_balances,2023-04,primary,not-supported,2025-12-02,"The link is broken, use the archived versions instead.",https://ec.europa.eu/eurostat/documents/38154/4956218/Balances-April2023.zip

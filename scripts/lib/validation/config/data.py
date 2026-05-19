@@ -271,3 +271,7 @@ class DataConfig(BaseModel):
         default_factory=_DataSourceConfig,
         description="Entsoepy bidding zones data source configuration.",
     )
+    eurelectric_data_centers: _DataSourceConfig = Field(
+        default_factory=_DataSourceConfig,
+        description="UKPN data for data center utilisation ratios.",
+    )

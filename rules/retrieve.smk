@@ -411,7 +411,10 @@ if (CUTOUT_DATASET := dataset_version("cutout"))["source"] in [
             mem_mb=5000,
         retries: 2
         run:
-            copy2(input[0], output[0])
+            print("skip")
+            # print(CUTOUT_DATASET['folder'])
+            # copy2(input[0], output[0])
+
 
 
 if (COUNTRY_RUNOFF_DATASET := dataset_version("country_runoff"))["source"] in [
@@ -1707,6 +1710,34 @@ if (FFE_LOAD_PROFILES_DATASET := dataset_version("ffe_load_profiles"))["source"]
         run:
             data = requests.get(
                 "https://api.opendata.ffe.de/opendata", params={"id_opendata": 59}
+            ).json()
+
+            with open(output[0], "w") as f:
+                json.dump(data, f)
+
+
+
+if (UKPN_DATASET := dataset_version("eurelectric_data_centers"))["source"] in [
+    "archive"
+]:
+
+    rule retrieve_data_center_demand_profiles:
+        output:
+            "data/eurelectric_data_centers/archive/v0.1/manual/ukpn-data-centre-demand-profiles.csv",  # TODO change location from manual/ across directory
+        log:
+            "logs/retrieve_data_center_demand_profiles",
+        resources:
+            mem_mb=1000,
+        retries: 2
+        run:
+            api_key = os.environ.get("UKPN_API_KEY")
+            headers = {
+                "Authorization": f"Apikey {api_key}",
+                "Content-Type": "application/json",
+            }
+            data = requests.get(
+                "https://ukpowernetworks.opendatasoft.com/api/explore/v2.1/catalog/datasets/ukpn-data-centre-demand-profiles/records/?lang=en&limit=10&offset=0",
+                headers=headers,
             ).json()
 
             with open(output[0], "w") as f:
