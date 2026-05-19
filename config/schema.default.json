@@ -868,6 +868,126 @@
       },
       "type": "array"
     },
+    "DataCenterConfigSection": {
+      "description": "Configuration for `data center` settings with Eurelectric DSR extensions.",
+      "properties": {
+        "dsr": {
+          "description": "Configuration for `data_center.dsr` (demand-side response) settings.\n\nIndustry DSR models the flexibility potential of industrial electricity loads,\nallowing load shifting within configurable time windows. Each technology or\nprofile can have its own flexibility parameters.",
+          "properties": {
+            "enable": {
+              "default": false,
+              "description": "Enable data center electricity demand-side response modeling. When enabled, adds flexibility stores and links for each data center demand bus.",
+              "type": "boolean"
+            },
+            "capital_cost": {
+              "default": 0.1,
+              "description": "Capital cost for DSR flexibility stores representing the cost of providing flexibility capacity (EUR/MWh/year). Higher values reduce DSR utilization.",
+              "type": "number"
+            },
+            "marginal_cost": {
+              "default": 0.1,
+              "description": "Cost of dispatching DSR (EUR/MWh).",
+              "type": "number"
+            },
+            "p_pct_nom": {
+              "default": 0.05,
+              "description": "Fraction of nominal load capacity that can participate in DSR.",
+              "type": "number"
+            },
+            "shift_hours": {
+              "default": 6,
+              "description": "Maximum hours that load can be shifted forward or backward.",
+              "type": "number"
+            }
+          }
+        },
+        "load": {
+          "properties": {
+            "profile": {
+              "default": "High Voltage Import",
+              "description": "Data center voltage classification in UKPN data set to base profile on",
+              "enum": [
+                "High Voltage Import",
+                "Low Voltage Import",
+                "Extra High Voltage Import"
+              ],
+              "type": "string"
+            },
+            "profile_year": {
+              "default": 2024,
+              "description": "Year of  UKPN data set to use for load profile",
+              "type": "integer"
+            },
+            "method": {
+              "default": "max",
+              "description": "Aggregation method for data center load profiles provided by the UKPN dataset",
+              "enum": [
+                "min",
+                "max",
+                "mean"
+              ],
+              "type": "string"
+            }
+          },
+          "description": "Load data to use for data center demand"
+        },
+        "on-site generation": {
+          "description": "Configuration for `data_center.generation` (demand-side response) settings.\n\nIndustry DSR models the flexibility potential of industrial electricity loads,\nallowing load shifting within configurable time windows. Each technology or\nprofile can have its own flexibility parameters.",
+          "properties": {
+            "enable": {
+              "default": false,
+              "description": "Enable data center on site generation modeling. When enabled, adds flexibility stores and links for each data center demand bus.",
+              "type": "boolean"
+            },
+            "p_pct_nom": {
+              "default": 0.2,
+              "description": "Generation capacity as a fraction of the nominal capacity of the data center.",
+              "type": "number"
+            },
+            "reference_technology": {
+              "default": "OCGT",
+              "description": "Reference technology for cost/efficiency parameters. Should be a technology that already exists in network",
+              "type": "string"
+            }
+          }
+        },
+        "on-site storage": {
+          "description": "Configuration for `data_center.generation` (demand-side response) settings.\n\nIndustry DSR models the flexibility potential of industrial electricity loads,\nallowing load shifting within configurable time windows. Each technology or\nprofile can have its own flexibility parameters.",
+          "properties": {
+            "enable": {
+              "default": false,
+              "description": "Enable data center on site generation modeling. When enabled, adds flexibility stores and links for each data center demand bus.",
+              "type": "boolean"
+            },
+            "p_pct_nom": {
+              "default": 0.2,
+              "description": "Storage capacity as a fraction of the nominal capacity of the data center.",
+              "type": "number"
+            },
+            "shift_hours": {
+              "default": 6,
+              "description": "Number of hours battery is capable of full dis/charge. e.g E_battery = P_battery * shift_hours.",
+              "type": "number"
+            },
+            "reference_technology": {
+              "default": "battery",
+              "description": "Technology to base assumptions of efficiency/cost on. (Should be pre existing in the network)",
+              "type": "string"
+            }
+          }
+        },
+        "grid_connection": {
+          "default": "Bidirectional",
+          "description": "Enables power to be pushed back from the data center to grid",
+          "enum": [
+            "Grid to data center",
+            "Data center to grid",
+            "Bidirectional"
+          ],
+          "type": "string"
+        }
+      }
+    },
     "DataConfig": {
       "description": "Configuration for `data` settings.",
       "properties": {
@@ -2052,6 +2172,26 @@
           }
         },
         "bidding_zones_entsoepy": {
+          "description": "Configuration for a single data source.",
+          "properties": {
+            "source": {
+              "default": "archive",
+              "description": "Source of the data. 'archive' retrieves pre-built data, 'primary' retrieves from primary source.",
+              "enum": [
+                "archive",
+                "primary",
+                "build"
+              ],
+              "type": "string"
+            },
+            "version": {
+              "default": "latest",
+              "description": "Version of the data to use. Uses the specific 'version' for the selected 'source' or the dataset tagged 'latest' for this source.",
+              "type": "string"
+            }
+          }
+        },
+        "eurelectric_data_centers": {
           "description": "Configuration for a single data source.",
           "properties": {
             "source": {
@@ -6314,6 +6454,110 @@
           ],
           "default": null,
           "description": "Dictionary of keyword arguments passed to ``atlite.Cutout.prepare()`` when building the cutout."
+        }
+      }
+    },
+    "_DataCenterDSRConfig": {
+      "description": "Configuration for `data_center.dsr` (demand-side response) settings.\n\nIndustry DSR models the flexibility potential of industrial electricity loads,\nallowing load shifting within configurable time windows. Each technology or\nprofile can have its own flexibility parameters.",
+      "properties": {
+        "enable": {
+          "default": false,
+          "description": "Enable data center electricity demand-side response modeling. When enabled, adds flexibility stores and links for each data center demand bus.",
+          "type": "boolean"
+        },
+        "capital_cost": {
+          "default": 0.1,
+          "description": "Capital cost for DSR flexibility stores representing the cost of providing flexibility capacity (EUR/MWh/year). Higher values reduce DSR utilization.",
+          "type": "number"
+        },
+        "marginal_cost": {
+          "default": 0.1,
+          "description": "Cost of dispatching DSR (EUR/MWh).",
+          "type": "number"
+        },
+        "p_pct_nom": {
+          "default": 0.05,
+          "description": "Fraction of nominal load capacity that can participate in DSR.",
+          "type": "number"
+        },
+        "shift_hours": {
+          "default": 6,
+          "description": "Maximum hours that load can be shifted forward or backward.",
+          "type": "number"
+        }
+      }
+    },
+    "_DataCenterGenerationConfig": {
+      "description": "Configuration for `data_center.generation` (demand-side response) settings.\n\nIndustry DSR models the flexibility potential of industrial electricity loads,\nallowing load shifting within configurable time windows. Each technology or\nprofile can have its own flexibility parameters.",
+      "properties": {
+        "enable": {
+          "default": false,
+          "description": "Enable data center on site generation modeling. When enabled, adds flexibility stores and links for each data center demand bus.",
+          "type": "boolean"
+        },
+        "p_pct_nom": {
+          "default": 0.2,
+          "description": "Generation capacity as a fraction of the nominal capacity of the data center.",
+          "type": "number"
+        },
+        "reference_technology": {
+          "default": "OCGT",
+          "description": "Reference technology for cost/efficiency parameters. Should be a technology that already exists in network",
+          "type": "string"
+        }
+      }
+    },
+    "_DataCenterLoadConfig": {
+      "properties": {
+        "profile": {
+          "default": "High Voltage Import",
+          "description": "Data center voltage classification in UKPN data set to base profile on",
+          "enum": [
+            "High Voltage Import",
+            "Low Voltage Import",
+            "Extra High Voltage Import"
+          ],
+          "type": "string"
+        },
+        "profile_year": {
+          "default": 2024,
+          "description": "Year of  UKPN data set to use for load profile",
+          "type": "integer"
+        },
+        "method": {
+          "default": "max",
+          "description": "Aggregation method for data center load profiles provided by the UKPN dataset",
+          "enum": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "type": "string"
+        }
+      }
+    },
+    "_DataCenterStorageConfig": {
+      "description": "Configuration for `data_center.generation` (demand-side response) settings.\n\nIndustry DSR models the flexibility potential of industrial electricity loads,\nallowing load shifting within configurable time windows. Each technology or\nprofile can have its own flexibility parameters.",
+      "properties": {
+        "enable": {
+          "default": false,
+          "description": "Enable data center on site generation modeling. When enabled, adds flexibility stores and links for each data center demand bus.",
+          "type": "boolean"
+        },
+        "p_pct_nom": {
+          "default": 0.2,
+          "description": "Storage capacity as a fraction of the nominal capacity of the data center.",
+          "type": "number"
+        },
+        "shift_hours": {
+          "default": 6,
+          "description": "Number of hours battery is capable of full dis/charge. e.g E_battery = P_battery * shift_hours.",
+          "type": "number"
+        },
+        "reference_technology": {
+          "default": "battery",
+          "description": "Technology to base assumptions of efficiency/cost on. (Should be pre existing in the network)",
+          "type": "string"
         }
       }
     },
@@ -14108,6 +14352,26 @@
               "type": "string"
             }
           }
+        },
+        "eurelectric_data_centers": {
+          "description": "Configuration for a single data source.",
+          "properties": {
+            "source": {
+              "default": "archive",
+              "description": "Source of the data. 'archive' retrieves pre-built data, 'primary' retrieves from primary source.",
+              "enum": [
+                "archive",
+                "primary",
+                "build"
+              ],
+              "type": "string"
+            },
+            "version": {
+              "default": "latest",
+              "description": "Version of the data to use. Uses the specific 'version' for the selected 'source' or the dataset tagged 'latest' for this source.",
+              "type": "string"
+            }
+          }
         }
       }
     },
@@ -14149,6 +14413,126 @@
               "type": "string"
             }
           }
+        }
+      }
+    },
+    "data_center": {
+      "description": "Configuration for `data center` settings with Eurelectric DSR extensions.",
+      "properties": {
+        "dsr": {
+          "description": "Configuration for `data_center.dsr` (demand-side response) settings.\n\nIndustry DSR models the flexibility potential of industrial electricity loads,\nallowing load shifting within configurable time windows. Each technology or\nprofile can have its own flexibility parameters.",
+          "properties": {
+            "enable": {
+              "default": false,
+              "description": "Enable data center electricity demand-side response modeling. When enabled, adds flexibility stores and links for each data center demand bus.",
+              "type": "boolean"
+            },
+            "capital_cost": {
+              "default": 0.1,
+              "description": "Capital cost for DSR flexibility stores representing the cost of providing flexibility capacity (EUR/MWh/year). Higher values reduce DSR utilization.",
+              "type": "number"
+            },
+            "marginal_cost": {
+              "default": 0.1,
+              "description": "Cost of dispatching DSR (EUR/MWh).",
+              "type": "number"
+            },
+            "p_pct_nom": {
+              "default": 0.05,
+              "description": "Fraction of nominal load capacity that can participate in DSR.",
+              "type": "number"
+            },
+            "shift_hours": {
+              "default": 6,
+              "description": "Maximum hours that load can be shifted forward or backward.",
+              "type": "number"
+            }
+          }
+        },
+        "load": {
+          "properties": {
+            "profile": {
+              "default": "High Voltage Import",
+              "description": "Data center voltage classification in UKPN data set to base profile on",
+              "enum": [
+                "High Voltage Import",
+                "Low Voltage Import",
+                "Extra High Voltage Import"
+              ],
+              "type": "string"
+            },
+            "profile_year": {
+              "default": 2024,
+              "description": "Year of  UKPN data set to use for load profile",
+              "type": "integer"
+            },
+            "method": {
+              "default": "max",
+              "description": "Aggregation method for data center load profiles provided by the UKPN dataset",
+              "enum": [
+                "min",
+                "max",
+                "mean"
+              ],
+              "type": "string"
+            }
+          },
+          "description": "Load data to use for data center demand"
+        },
+        "on-site generation": {
+          "description": "Configuration for `data_center.generation` (demand-side response) settings.\n\nIndustry DSR models the flexibility potential of industrial electricity loads,\nallowing load shifting within configurable time windows. Each technology or\nprofile can have its own flexibility parameters.",
+          "properties": {
+            "enable": {
+              "default": false,
+              "description": "Enable data center on site generation modeling. When enabled, adds flexibility stores and links for each data center demand bus.",
+              "type": "boolean"
+            },
+            "p_pct_nom": {
+              "default": 0.2,
+              "description": "Generation capacity as a fraction of the nominal capacity of the data center.",
+              "type": "number"
+            },
+            "reference_technology": {
+              "default": "OCGT",
+              "description": "Reference technology for cost/efficiency parameters. Should be a technology that already exists in network",
+              "type": "string"
+            }
+          }
+        },
+        "on-site storage": {
+          "description": "Configuration for `data_center.generation` (demand-side response) settings.\n\nIndustry DSR models the flexibility potential of industrial electricity loads,\nallowing load shifting within configurable time windows. Each technology or\nprofile can have its own flexibility parameters.",
+          "properties": {
+            "enable": {
+              "default": false,
+              "description": "Enable data center on site generation modeling. When enabled, adds flexibility stores and links for each data center demand bus.",
+              "type": "boolean"
+            },
+            "p_pct_nom": {
+              "default": 0.2,
+              "description": "Storage capacity as a fraction of the nominal capacity of the data center.",
+              "type": "number"
+            },
+            "shift_hours": {
+              "default": 6,
+              "description": "Number of hours battery is capable of full dis/charge. e.g E_battery = P_battery * shift_hours.",
+              "type": "number"
+            },
+            "reference_technology": {
+              "default": "battery",
+              "description": "Technology to base assumptions of efficiency/cost on. (Should be pre existing in the network)",
+              "type": "string"
+            }
+          }
+        },
+        "grid_connection": {
+          "default": "Bidirectional",
+          "description": "Enables power to be pushed back from the data center to grid",
+          "enum": [
+            "Grid to data center",
+            "Data center to grid",
+            "Bidirectional"
+          ],
+          "type": "string"
         }
       }
     }

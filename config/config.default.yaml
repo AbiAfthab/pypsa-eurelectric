@@ -42,10 +42,8 @@ scenario:
   - ""
   sector_opts:
   - ""
-  planning_horizons: 
+  planning_horizons:
   - 2050
-  - 2040
-  - 2030
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#countries
 countries:
@@ -1140,7 +1138,7 @@ clustering:
     buses: {}
   temporal:
     resolution_elec: false
-    resolution_sector: 2190SEG
+    resolution_sector: false
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#adjustments
 adjustments:
@@ -1480,6 +1478,9 @@ data:
   bidding_zones_entsoepy:
     source: archive
     version: latest
+  eurelectric_data_centers:
+    source: archive
+    version: latest
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#overpass_api
 overpass_api:
@@ -1506,10 +1507,10 @@ data_center:
   "on-site generation":
     enable: false
     p_pct_nom: 0.2
-    reference_technology: battery
+    reference_technology: OCGT
   "on-site storage":
     enable: false
     p_pct_nom: 0.2
     shift_hours: 6
-    reference_technology: OCGT
+    reference_technology: battery
   grid_connection: Bidirectional
