@@ -1792,7 +1792,9 @@ rule prepare_sector_network:
             else []
         ),
         data_center_nodal_demand=lambda w: (
-            resources("eurelectric_data_centers/data_center_demand_s_50.csv")
+            resources(
+                "eurelectric_data_centers/data_center_demand_s_{clusters}_{planning_horizons}.csv"
+            )
             if config_provider("data_center")(w)
             else []
         ),
