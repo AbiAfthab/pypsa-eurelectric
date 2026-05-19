@@ -15,7 +15,7 @@
 
 rule build_data_center_demand:
     message:
-        "TESTING TESTING TESTING //Creating a nodal distribution of data center demand (annualized)"
+        "Creating a nodal distribution of data center demand (annualized) for {wildcards.clusters} clusters, {wildcards.planning_horizons} planning horizons"
     params:
         demand_year=config_provider("scenario", "planning_horizons"),
     input:
@@ -23,7 +23,7 @@ rule build_data_center_demand:
         clustered_pop_layout=resources("pop_layout_base_s_{clusters}.csv"),
     output:
         data_center_demand=resources(
-            "eurelectric_data_centers/data_center_demand_s_{clusters}.csv"
+            "eurelectric_data_centers/data_center_demand_s_{clusters}_{planning_horizons}.csv"
         ),
     script:
         scripts("eurelectric/build_data_center_profiles.py")
