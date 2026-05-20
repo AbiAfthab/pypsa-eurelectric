@@ -2191,7 +2191,7 @@
             }
           }
         },
-        "eurelectric_data_centers": {
+        "ukpn_data_centers": {
           "description": "Configuration for a single data source.",
           "properties": {
             "source": {
@@ -14353,7 +14353,7 @@
             }
           }
         },
-        "eurelectric_data_centers": {
+        "ukpn_data_centers": {
           "description": "Configuration for a single data source.",
           "properties": {
             "source": {
