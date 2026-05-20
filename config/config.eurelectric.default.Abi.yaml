@@ -500,7 +500,7 @@ solving:
     include_existing: true
     file: data/agg_p_nom_valideted_cap.csv
   constraints:
-    CCL: false
+    CCL: true
     EQ: false
     BAU: false
     SAFE: false
