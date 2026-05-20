@@ -1792,14 +1792,14 @@ rule prepare_sector_network:
             else []
         ),
         data_center_nodal_demand=lambda w: (
-            resources(
-                "eurelectric_data_centers/data_center_demand_s_{clusters}_{planning_horizons}.csv"
-            )
+            rules.build_data_center_demand.output["data_center_demand"]
             if config_provider("data_center")(w)
             else []
         ),
         data_center_demand_profile=lambda w: (
             rules.retrieve_ukpn_data_center_demand_profiles.output["csv"]
+            if config_provider("data_center")(w)
+            else []
         ),
     output:
         resources(

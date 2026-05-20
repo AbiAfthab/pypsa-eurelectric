@@ -9,11 +9,11 @@ rule build_data_center_demand:
     params:
         demand_year=config_provider("scenario", "planning_horizons"),
     input:
-        data_center_demand_fn="data/eurelectric_data_centers/archive/v0.1/manual/data_center_demand_projection.csv",
+        data_center_demand_fn="data/eurelectric_data_centers/manual/v0.1/demand_projection.csv",
         clustered_pop_layout=resources("pop_layout_base_s_{clusters}.csv"),
     output:
         data_center_demand=resources(
-            "eurelectric_data_centers/data_center_demand_s_{clusters}_{planning_horizons}.csv"
+            "data_center/demand_s_{clusters}_{planning_horizons}.csv"
         ),
     script:
         scripts("eurelectric/build_data_center_demand.py")
