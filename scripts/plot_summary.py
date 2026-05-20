@@ -55,6 +55,11 @@ preferred_order = pd.Index(
         "power-to-gas",
         "power-to-liquid",
         "battery storage",
+        "BEV charger",
+        "V2G",
+        "land transport EV",
+        "land transport fuel cell",
+        "land transport oil",
         "hot water storage",
         "CO2 sequestration",
     ]
