@@ -54,10 +54,9 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
     # all low voltage/distribution connections
     buses = n.buses[n.buses.index.str.contains("low voltage")].index
 
-    # check for nodes where the reported demand is 0 and filter them out
     # add baseline demand and assign loads
     load_profile = get_load_profile(profile_fn=profile_fn, **load)
-    utilization_hours = load_profile.sum()
+    utilization_hours = load_profile.sum().sum()
 
     # review: particularly check if this logic is acceptable the data for 
     # the load profile is missing a few timestamps
@@ -67,7 +66,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
     if load_profile.index.is_leap_year.any() and not n.snapshots.is_leap_year.any():
         load_profile = load_profile.loc[~((load_profile.index.month == 2) & (load_profile.index.day == 29))]
     load_profile.index -= pd.DateOffset(years=year_delta)
-    load_profile = load_profile.drop_duplicates().loc[n.snapshots]
+    load_profile = load_profile.reindex(n.snapshots, method="nearest")
     nodal_distribution = pd.read_csv(load_nodal_distribution_fn, index_col=["name"])
 
     load_nom = nodal_distribution / utilization_hours
