@@ -18,7 +18,7 @@ def get_load_profile(
     profile,
     profile_year,
     method,
-    profile_fn="data/ukpn_data_centers/primary/v0.1/ukpn-data-center-demand-profiles.csv",
+    profile_fn,
 ):
     # get annual utilization-hours (applied to all countries equally)
     df = pd.read_csv(
@@ -32,27 +32,13 @@ def get_load_profile(
     )
     df = df.xs(profile, level="cleansed_voltage_level")["hh_utilisation_ratio"]
 
-    # Get all entries in the requested year for utc_timestamp
-    df_profile_year = df[
-        df.index.get_level_values("utc_timestamp").year == int(profile_year)
-    ]
-
-    # Groupby utc_timestamp for the mean of the hh_utilisation_ration
-    df_profile_year_grouped = df_profile_year.groupby("utc_timestamp").mean()
-
-    # Aggregate to hourly values by resampling the utc_timestamp to hourly and taking the mean of the hh_utilisation_ratio
-    df_profile_year_grouped = (
-        df_profile_year_grouped.resample("h")
-        .mean()
-        .reset_index()
-        .drop_duplicates(subset="utc_timestamp", keep="first")
-        .set_index("utc_timestamp")
-    )
-
-    return df_profile_year_grouped
+    # Get rid of subhourly data by resampling to hourly with averaging
+    demand_profile = demand_profile.resample("h").mean()
+    
+    return demand_profile
 
 
-def attach_data_centers(n, load_nodal_distribution_fn, params):
+def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
     load = params["load"]
     generation = params["on-site generation"]
     storage = params["on-site storage"]
@@ -64,11 +50,16 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
 
     # check for nodes where the reported demand is 0 and filter them out
     # add baseline demand and assign loads
-    load_profile = get_load_profile(**load)
-    utilization_hours = load_profile.sum().sum()
+    load_profile = get_load_profile(profile_fn=profile_fn, **load)
+    utilization_hours = load_profile.sum()
 
-    # review: particularly check if this logic is acceptable the data for the load profile is missing a few timestamps
+    # review: particularly check if this logic is acceptable the data for 
+    # the load profile is missing a few timestamps
     year_delta = int(load["profile_year"] - n.snapshots.year.min())
+    # Drop leap day if it exists in the load profile but not in the target snapshots
+    # TODO should better use the config entry here for full consistency
+    if load_profile.index.is_leap_year.any() and not n.snapshots.is_leap_year.any():
+        load_profile = load_profile.loc[~((load_profile.index.month == 2) & (load_profile.index.day == 29))]
     load_profile.index -= pd.DateOffset(years=year_delta)
     load_profile = load_profile.drop_duplicates().loc[n.snapshots]
     nodal_distribution = pd.read_csv(load_nodal_distribution_fn, index_col=["name"])

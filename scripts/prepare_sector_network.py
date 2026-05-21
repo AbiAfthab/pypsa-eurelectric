@@ -7147,9 +7147,10 @@ if __name__ == "__main__":
         snakemake = mock_snakemake(
             "prepare_sector_network",
             opts="",
-            clusters="10",
+            clusters="50",
             sector_opts="",
             planning_horizons="2050",
+            configfiles="config/scenarios/config.flexible_data_centers.yaml",
         )
 
     configure_logging(snakemake)  # pylint: disable=E0606
@@ -7485,9 +7486,12 @@ if __name__ == "__main__":
     if options["electricity_grid_connection"]:
         add_electricity_grid_connection(n, costs)
 
-    if True:  # replace with a data center flag in options?
+    if snakemake.params["data_center"]:
         attach_data_centers(
-            n, snakemake.input.data_center_nodal_demand, snakemake.config["data_center"]
+            n=n,
+            load_nodal_distribution_fn=snakemake.input.data_center_nodal_demand,
+            profile_fn=snakemake.input.data_center_demand_profile,
+            params=snakemake.params["data_center"],
         )
 
     for k, v in options["transmission_efficiency"].items():
