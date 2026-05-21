@@ -472,6 +472,7 @@ def attach_wind_and_solar(
     extendable_carriers: list | set,
     line_length_factor: float = 1.0,
     landfall_lengths: dict = None,
+    renewable_params: dict | None = None,
 ) -> None:
     """
     Attach wind and solar generators to the network.
@@ -492,11 +493,18 @@ def attach_wind_and_solar(
         Factor to scale the line length, by default 1.0.
     landfall_lengths : dict, optional
         Dictionary containing the landfall lengths for offshore wind, by default None.
+    renewable_params : dict, optional
+        Per-technology renewable configuration. When the offshore tech block contains a
+        `country_potential_overrides` mapping, `p_nom_max` and `p_max_pu` are scaled per
+        bus by the corresponding ISO2 country factors. See `OFFSHORE_BE_DE_OPTION_B.md`.
     """
     add_missing_carriers(n, carriers)
 
     if landfall_lengths is None:
         landfall_lengths = {}
+
+    if renewable_params is None:
+        renewable_params = {}
 
     for car in carriers:
         if car == "hydro":
@@ -554,6 +562,46 @@ def attach_wind_and_solar(
 
             p_max_pu = ds["profile"].to_pandas()
             p_max_pu.columns = p_max_pu.columns.map(flatten)
+
+            if supcar == "offwind":
+                tech_params = renewable_params.get(car, {}) or {}
+                overrides = tech_params.get("country_potential_overrides") or {}
+                if overrides:
+                    resource_classes = tech_params.get("resource_classes", 1)
+                    if resource_classes != 1:
+                        raise ValueError(
+                            f"`country_potential_overrides` for {car} is only valid "
+                            f"with `resource_classes: 1` (got {resource_classes}). "
+                            "See OFFSHORE_BE_DE_OPTION_B.md."
+                        )
+                    bus_country_idx = (
+                        p_nom_max.index.to_series().str.split().str[0].str[:2]
+                    )
+                    bus_country_col = (
+                        p_max_pu.columns.to_series().str.split().str[0].str[:2]
+                    )
+                    for iso2, scales in overrides.items():
+                        k_cap = float(scales.get("capacity_per_sqkm_scale", 1.0))
+                        k_corr = float(scales.get("correction_factor_scale", 1.0))
+                        if k_cap == 1.0 and k_corr == 1.0:
+                            continue
+                        cap_mask = (bus_country_idx == iso2).to_numpy()
+                        pu_mask = (bus_country_col == iso2).to_numpy()
+                        if not cap_mask.any() and not pu_mask.any():
+                            logger.warning(
+                                f"country_potential_overrides[{iso2}] for {car}: "
+                                "no matching buses; skipping."
+                            )
+                            continue
+                        p_nom_max.loc[cap_mask] *= k_cap
+                        p_max_pu.loc[:, pu_mask] *= k_corr
+                        logger.info(
+                            f"Applied {car} potential override for {iso2}: "
+                            f"capacity_per_sqkm_scale={k_cap}, "
+                            f"correction_factor_scale={k_corr} "
+                            f"({int(cap_mask.sum())} buses)"
+                        )
+                    p_max_pu = p_max_pu.clip(upper=1.0)
 
             n.add(
                 "Generator",
@@ -1269,6 +1317,7 @@ if __name__ == "__main__":
         extendable_carriers,
         params.line_length_factor,
         landfall_lengths,
+        renewable_params=params.renewable,
     )
 
     if "hydro" in renewable_carriers:

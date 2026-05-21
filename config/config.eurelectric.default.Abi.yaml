@@ -104,6 +104,44 @@ electricity:
     Store: [H2]
     Link: []
   transmission_limit: "v1.25"
+
+# =============================================================================
+# RENEWABLE — per-country offshore potential overrides (BE / DE)
+# =============================================================================
+# Applied at network-attach time in `attach_wind_and_solar`. Scales `p_nom_max`
+# and `p_max_pu` per bus by ISO2 country, equivalent to changing
+# `capacity_per_sqkm` / `correction_factor` in the GIS step when
+# `resource_classes == 1`. Defaults below are 1.0 (inert) — calibrate with the
+# engineering team. See `OFFSHORE_BE_DE_OPTION_B.md` for rationale and
+# validation plan.
+renewable:
+  # After the brownfield adjustment in `solve_network.add_land_use_constraint`
+  # (existing capacity is subtracted from extendable `p_nom_max`), the actual
+  # upper bound on total installed offshore is `k_cap * original_GIS` (existing
+  # is NOT added on top). Sizing therefore needs `k_cap * original_GIS >= CCL_min`.
+  #
+  # BE: original GIS = 1.742 GW; CCL min 2040 = 7.36 GW -> k_cap >= 4.23.
+  #     Picked 4.5 -> scaled potential 7.84 GW (~6 % above min, just under CSV max 8.0 GW).
+  # DE: original GIS = 26.354 GW; CCL min 2040 = 55.00 GW -> k_cap >= 2.09.
+  #     Picked 2.5 -> scaled potential 65.89 GW (~20 % above min, below CSV max 73 GW).
+  #
+  # Physical interpretation: new offshore zones in BE / DE (Princess Elisabeth,
+  # extra North Sea allocations etc.) with normal North-Sea wind conditions.
+  # k_corr is kept at 1.0 so the per-MW capacity factor stays at the global
+  # default (`correction_factor: 0.8855`).
+  "offwind-ac":
+    country_potential_overrides:
+      BE: { capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0 }
+      DE: { capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0 }
+  "offwind-dc":
+    country_potential_overrides:
+      BE: { capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0 }
+      DE: { capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0 }
+  "offwind-float":
+    country_potential_overrides:
+      BE: { capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0 }
+      DE: { capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0 }
+
 # =============================================================================
 # CLUSTERING
 # =============================================================================
