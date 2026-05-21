@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: CC0-1.0
 
 run:
-  name: "baseline_no_flex"
+  name: "flexible_data_centers_store_and_gen"
 
 data_center:
   dsr:
@@ -12,17 +12,17 @@ data_center:
     capital_cost: 0.1
     marginal_cost: 0.1
     p_pct_nom: 0.05
-    shift_hours: 6
+    shift_hours: 12
   load:
     profile: High Voltage Import
     profile_year: 2024
   on-site generation:
-    enable: false
-    p_pct_nom: 0.2
+    enable: true
+    p_pct_nom: 0.3
     reference_technology: OCGT
   on-site storage:
-    enable: false
-    p_pct_nom: 0.2
+    enable: true
+    p_pct_nom: 0.3
     shift_hours: 6
     reference_technology: battery
   grid_connection: "Grid to data center"

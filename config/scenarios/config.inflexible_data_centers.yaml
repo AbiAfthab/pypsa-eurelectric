@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: CC0-1.0
 
 run:
-  name: "baseline_no_flex"
+  name: "inflexible_data_centers"
 
 data_center:
   dsr:

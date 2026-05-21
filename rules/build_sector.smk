@@ -1207,7 +1207,6 @@ rule build_industrial_energy_demand_per_node:
             "industrial_energy_demand_today_base_s_{clusters}.csv"
         ),
         ffe_profiles="data/ffe_industry_load_profiles.json",
-        
     output:
         industrial_energy_demand_per_node=resources(
             "industrial_energy_demand_base_s_{clusters}_{planning_horizons}.csv"
@@ -1238,7 +1237,9 @@ rule build_industrial_energy_demand_per_node:
 rule build_industry_dsr_profile:
     params:
         restriction_time=config_provider("industry", "dsr", "restriction_time"),
-        technology_breakdown=config_provider("industry", "dsr", "technology_breakdown", default={}),
+        technology_breakdown=config_provider(
+            "industry", "dsr", "technology_breakdown", default={}
+        ),
     input:
         industrial_electricity_demand_per_profile_temporal=resources(
             "industrial_electricity_demand_per_profile_temporal_base_s_{clusters}_{planning_horizons}.csv"
@@ -1641,6 +1642,7 @@ rule prepare_sector_network:
         temperature_limited_stores=config_provider(
             "sector", "district_heating", "temperature_limited_stores"
         ),
+        data_center=config_provider("data_center"),
     input:
         unpack(input_profile_offwind),
         unpack(input_heat_source_power),
@@ -1787,6 +1789,16 @@ rule prepare_sector_network:
         ates_potentials=lambda w: (
             resources("ates_potentials_base_s_{clusters}_{planning_horizons}.csv")
             if config_provider("sector", "district_heating", "ates", "enable")(w)
+            else []
+        ),
+        data_center_nodal_demand=lambda w: (
+            rules.build_data_center_demand.output["data_center_demand"]
+            if config_provider("data_center")(w)
+            else []
+        ),
+        data_center_demand_profile=lambda w: (
+            rules.retrieve_ukpn_data_center_demand_profiles.output["csv"]
+            if config_provider("data_center")(w)
             else []
         ),
     output:

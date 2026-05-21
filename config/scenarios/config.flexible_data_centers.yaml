@@ -4,15 +4,15 @@
 # SPDX-License-Identifier: CC0-1.0
 
 run:
-  name: "baseline_no_flex"
+  name: "flexible_data_centers"
 
 data_center:
   dsr:
-    enable: false
+    enable: true
     capital_cost: 0.1
-    marginal_cost: 0.1
+    marginal_cost: 0.1 # Assuming shifting load is for free to the ESM, as the DC will require to deliver this DSR in order to gain access to the system
     p_pct_nom: 0.05
-    shift_hours: 6
+    shift_hours: 12
   load:
     profile: High Voltage Import
     profile_year: 2024

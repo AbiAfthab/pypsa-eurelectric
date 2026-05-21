@@ -11,3 +11,4 @@ See the docs for more details: https://pypsa-eur.readthedocs.io/en/latest/valida
 
 import scripts.lib.validation.config.industry_eurelectric_config  # noqa: F401
 import scripts.lib.validation.config.transport_eurelectric_config  # noqa: F401
+import scripts.lib.validation.config.data_center_eurelectric_config
