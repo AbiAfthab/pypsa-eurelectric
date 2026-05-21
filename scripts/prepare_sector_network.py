@@ -2553,8 +2553,12 @@ def add_ice_cars(
     )
 
     # Calculate oil demand profile
-    profile = ice_share * p_set.div(efficiency).rename(
-    columns=lambda x: x + f" land transport oil {mode}"
+    # NB: parentheses around the multiplication are required so that ice_share
+    # (Series indexed by node) aligns with the un-renamed columns of
+    # p_set / efficiency. Renaming first would break the alignment and silently
+    # produce an all-NaN (then zero) demand profile.
+    profile = (ice_share * p_set.div(efficiency)).rename(
+        columns=lambda x: x + f" land transport oil {mode}"
     )
 
     if not options["regional_oil_demand"]:

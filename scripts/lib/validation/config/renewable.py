@@ -129,6 +129,23 @@ class _OnwindConfig(BaseModel):
     )
 
 
+class _CountryPotentialOverride(BaseModel):
+    """Per-country multiplicative scaling of `capacity_per_sqkm` and `correction_factor` for renewable potentials.
+
+    See `OFFSHORE_BE_DE_OPTION_B.md` for the motivation and equivalence proof.
+    Only meaningful when `resource_classes == 1`.
+    """
+
+    capacity_per_sqkm_scale: float = Field(
+        1.0,
+        description="Multiplicative scale applied to per-bus `p_nom_max` for buses in this country.",
+    )
+    correction_factor_scale: float = Field(
+        1.0,
+        description="Multiplicative scale applied to per-bus `p_max_pu` (capacity-factor time series) for buses in this country.",
+    )
+
+
 class _OffwindConfig(BaseModel):
     """Configuration for offshore wind."""
 
@@ -189,6 +206,16 @@ class _OffwindConfig(BaseModel):
     landfall_length: float | str = Field(
         20,
         description="Fixed length of the cable connection that is onshorelandfall in km. If 'centroid', the length is calculated as the distance to centroid of the onshore bus.",
+    )
+    country_potential_overrides: dict[str, _CountryPotentialOverride] | None = Field(
+        None,
+        description=(
+            "Optional ISO2-keyed multiplicative scaling of `p_nom_max` and `p_max_pu` "
+            "applied at network-attach time. Equivalent to changing `capacity_per_sqkm` "
+            "and `correction_factor` in the GIS step when `resource_classes == 1`. "
+            "Used to align BE/DE offshore potentials with validated CCL minimums; see "
+            "`OFFSHORE_BE_DE_OPTION_B.md`."
+        ),
     )
 
 
