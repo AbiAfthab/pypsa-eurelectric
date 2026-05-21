@@ -18,10 +18,10 @@ def get_load_profile(
     profile,
     profile_year,
     method,
-    profile_fn="data/eurelectric_data_centers/archive/v0.1/manual/ukpn-data-centre-demand-profiles.csv",
+    profile_fn="data/ukpn_data_centers/primary/v0.1/ukpn-data-center-demand-profiles.csv",
 ):
     # get annual utilization-hours (applied to all countries equally)
-    demand_profile = pd.read_csv(
+    df = pd.read_csv(
         profile_fn,
         parse_dates=["utc_timestamp"],
         index_col=[
@@ -30,18 +30,26 @@ def get_load_profile(
             "anonymised_data_centre_name",
         ],
     )
-    demand_profile = (
-        demand_profile.xs(profile, level="cleansed_voltage_level")[
-            "hh_utilisation_ratio"
-        ]
-        .groupby(level="utc_timestamp")
-        .agg(method)
-    )
-    demand_profile = demand_profile.loc[str(profile_year)]
+    df = df.xs(profile, level="cleansed_voltage_level")["hh_utilisation_ratio"]
 
-    # get rid of subhourly data since it isn't used in pypsa
-    demand_profile = demand_profile[demand_profile.index.minute == 0]
-    return demand_profile
+    # Get all entries in the requested year for utc_timestamp
+    df_profile_year = df[
+        df.index.get_level_values("utc_timestamp").year == int(profile_year)
+    ]
+
+    # Groupby utc_timestamp for the mean of the hh_utilisation_ration
+    df_profile_year_grouped = df_profile_year.groupby("utc_timestamp").mean()
+
+    # Aggregate to hourly values by resampling the utc_timestamp to hourly and taking the mean of the hh_utilisation_ratio
+    df_profile_year_grouped = (
+        df_profile_year_grouped.resample("h")
+        .mean()
+        .reset_index()
+        .drop_duplicates(subset="utc_timestamp", keep="first")
+        .set_index("utc_timestamp")
+    )
+
+    return df_profile_year_grouped
 
 
 def attach_data_centers(n, load_nodal_distribution_fn, params):
@@ -57,13 +65,12 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
     # check for nodes where the reported demand is 0 and filter them out
     # add baseline demand and assign loads
     load_profile = get_load_profile(**load)
-    utilization_hours = load_profile.sum()
+    utilization_hours = load_profile.sum().sum()
 
     # review: particularly check if this logic is acceptable the data for the load profile is missing a few timestamps
     year_delta = int(load["profile_year"] - n.snapshots.year.min())
     load_profile.index -= pd.DateOffset(years=year_delta)
-    load_profile = load_profile.resample("h").ffill()
-    load_profile = load_profile.loc[n.snapshots]
+    load_profile = load_profile.drop_duplicates().loc[n.snapshots]
     nodal_distribution = pd.read_csv(load_nodal_distribution_fn, index_col=["name"])
 
     load_nom = nodal_distribution / utilization_hours
@@ -72,6 +79,8 @@ def attach_data_centers(n, load_nodal_distribution_fn, params):
         index=load_profile.index,
         columns=load_nom.index,
     )
+
+    # remove assest where the data center demand is zero
     zero_cols = load.columns[(load == 0).all()]
     load = load.drop(zero_cols, axis=1)
     load_nom = load_nom.drop(zero_cols, axis=0)
