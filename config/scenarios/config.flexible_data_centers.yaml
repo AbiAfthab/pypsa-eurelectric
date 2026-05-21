@@ -5,10 +5,6 @@
 
 run:
   name: "flexible_data_centers"
-  disable_progressbar: true
-  shared_resources:
-    policy: false
-  shared_cutouts: true
 
 data_center:
   dsr:
@@ -20,17 +16,13 @@ data_center:
   load:
     profile: High Voltage Import
     profile_year: 2024
-  "on-site generation":
+  on-site generation:
     enable: false
     p_pct_nom: 0.2
     reference_technology: OCGT
-  "on-site storage":
+  on-site storage:
     enable: false
     p_pct_nom: 0.2
     shift_hours: 6
     reference_technology: battery
   grid_connection: "Grid to data center"
-
-clustering:
-  temporal:
-    resolution_sector: 1000SEG

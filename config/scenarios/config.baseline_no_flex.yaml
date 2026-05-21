@@ -3,20 +3,8 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-tutorial: true
-
 run:
-  name: "baseline_no_flex_28c_3h"
-  disable_progressbar: true
-  shared_resources:
-    policy: false
-  shared_cutouts: true
-
-countries: ['AT', 'BE', 'BG', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'NL', 'NO', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK']
-
-snapshots:
-  start: "2019-01-01"
-  end: "2019-12-31"
+  name: "baseline_no_flex"
 
 data_center:
   dsr:
@@ -28,13 +16,13 @@ data_center:
   load:
     profile: High Voltage Import
     profile_year: 2024
-  "on-site generation":
+  on-site generation:
     enable: false
     p_pct_nom: 0.2
     reference_technology: OCGT
-  "on-site storage":
+  on-site storage:
     enable: false
     p_pct_nom: 0.2
     shift_hours: 6
     reference_technology: battery
-  grid_connection: Bidirectional
+  grid_connection: "Grid to data center"
