@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 def get_load_profile(
     profile,
     profile_year,
-    method,
     profile_fn,
 ):
     # get annual utilization-hours (applied to all countries equally)
@@ -30,7 +29,14 @@ def get_load_profile(
             "anonymised_data_centre_name",
         ],
     )
-    df = df.xs(profile, level="cleansed_voltage_level")["hh_utilisation_ratio"]
+    demand_profile = (
+        demand_profile.xs(profile, level="cleansed_voltage_level")[
+            "hh_utilisation_ratio"
+        ]
+        .groupby(level="utc_timestamp")
+        .agg("mean")
+    )
+    demand_profile = demand_profile.loc[str(profile_year)]
 
     # Get rid of subhourly data by resampling to hourly with averaging
     demand_profile = demand_profile.resample("h").mean()

@@ -96,11 +96,6 @@ class _DataCenterLoadConfig(ConfigModel):
     profile_year: int = Field(
         2024, description="Year of  UKPN data set to use for load profile"
     )
-    method: Literal["min", "max", "mean"] = Field(
-        "max",
-        description="Aggregation method for data center load profiles provided by the UKPN dataset",
-    )
-
 
 class DataCenterConfigSection(BaseModel):
     dsr: bool = Field(

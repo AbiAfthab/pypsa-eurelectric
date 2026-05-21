@@ -917,16 +917,6 @@
               "default": 2024,
               "description": "Year of  UKPN data set to use for load profile",
               "type": "integer"
-            },
-            "method": {
-              "default": "max",
-              "description": "Aggregation method for data center load profiles provided by the UKPN dataset",
-              "enum": [
-                "min",
-                "max",
-                "mean"
-              ],
-              "type": "string"
             }
           },
           "description": "Load data to use for data center demand"
@@ -6523,16 +6513,6 @@
           "default": 2024,
           "description": "Year of  UKPN data set to use for load profile",
           "type": "integer"
-        },
-        "method": {
-          "default": "max",
-          "description": "Aggregation method for data center load profiles provided by the UKPN dataset",
-          "enum": [
-            "min",
-            "max",
-            "mean"
-          ],
-          "type": "string"
         }
       }
     },
@@ -14465,16 +14445,6 @@
               "default": 2024,
               "description": "Year of  UKPN data set to use for load profile",
               "type": "integer"
-            },
-            "method": {
-              "default": "max",
-              "description": "Aggregation method for data center load profiles provided by the UKPN dataset",
-              "enum": [
-                "min",
-                "max",
-                "mean"
-              ],
-              "type": "string"
             }
           },
           "description": "Load data to use for data center demand"

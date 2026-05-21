@@ -28,7 +28,6 @@ data_center:
   load:
     profile: High Voltage Import
     profile_year: 2024
-    method: max
   "on-site generation":
     enable: false
     p_pct_nom: 0.2

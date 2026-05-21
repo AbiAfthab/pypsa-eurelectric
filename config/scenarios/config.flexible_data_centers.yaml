@@ -14,13 +14,12 @@ data_center:
   dsr:
     enable: true
     capital_cost: 0.1
-    marginal_cost: 0.1
-    p_pct_nom: 0.05 # note: do we really want 25% of the nominal capacity here or about 25% of the demand?
+    marginal_cost: 0.1 # Assuming shifting load is for free to the ESM, as the DC will require to deliver this DSR in order to gain access to the system
+    p_pct_nom: 0.05
     shift_hours: 12
   load:
     profile: High Voltage Import
-    profile_year: 2025
-    method: max
+    profile_year: 2024
   "on-site generation":
     enable: false
     p_pct_nom: 0.2
@@ -31,3 +30,7 @@ data_center:
     shift_hours: 6
     reference_technology: battery
   grid_connection: "Grid to data center"
+
+clustering:
+  temporal:
+    resolution_sector: 1000SEG
