@@ -107,8 +107,8 @@ if __name__ == "__main__":
                 "KFZ_R2",
                 "Pkw_R1",
                 "Pkw_R2",
-            # Adding Buses, Van and Heavy Duty vehicles 
-            # 'loA, Lzg, Sat' is trucks, 'lfw' is van, 'bus' is buses,     
+                # Adding Buses, Van and Heavy Duty vehicles
+                # 'loA, Lzg, Sat' is trucks, 'lfw' is van, 'bus' is buses,
                 "Bus_R1",
                 "Bus_R2",
                 "LoA_R1",
@@ -143,19 +143,24 @@ if __name__ == "__main__":
     vehicle_counts["pkw_raw"] = vehicle_counts["Pkw_R1"] + vehicle_counts["Pkw_R2"]
 
     # Vans (Light commercial vehicles)
-    vehicle_counts["lfw"] = vehicle_counts['Lfw_R1'] + vehicle_counts['Lfw_R2']
+    vehicle_counts["lfw"] = vehicle_counts["Lfw_R1"] + vehicle_counts["Lfw_R2"]
 
     # Convention 1: passenger cars excluding vans
-    vehicle_counts["pkw"] = (vehicle_counts["pkw_raw"] - vehicle_counts["lfw"]).clip(lower=0)
+    vehicle_counts["pkw"] = (vehicle_counts["pkw_raw"] - vehicle_counts["lfw"]).clip(
+        lower=0
+    )
 
     # Buses
     vehicle_counts["bus"] = vehicle_counts["Bus_R1"] + vehicle_counts["Bus_R2"]
 
     # Heavy duty: LoA + Lzg + Sat
     vehicle_counts["hd"] = (
-        vehicle_counts["LoA_R1"] + vehicle_counts["LoA_R2"]
-        + vehicle_counts["Lzg_R1"] + vehicle_counts["Lzg_R2"]
-        + vehicle_counts["Sat_R1"] + vehicle_counts["Sat_R2"]
+        vehicle_counts["LoA_R1"]
+        + vehicle_counts["LoA_R2"]
+        + vehicle_counts["Lzg_R1"]
+        + vehicle_counts["Lzg_R2"]
+        + vehicle_counts["Sat_R1"]
+        + vehicle_counts["Sat_R2"]
     )
 
     # vehicles types to aggregate for and output files to write to

@@ -411,7 +411,10 @@ if (CUTOUT_DATASET := dataset_version("cutout"))["source"] in [
             mem_mb=5000,
         retries: 2
         run:
-            copy2(input[0], output[0])
+            print("skip")
+            # print(CUTOUT_DATASET['folder'])
+            # copy2(input[0], output[0])
+
 
 
 if (COUNTRY_RUNOFF_DATASET := dataset_version("country_runoff"))["source"] in [
@@ -1711,3 +1714,26 @@ if (FFE_LOAD_PROFILES_DATASET := dataset_version("ffe_load_profiles"))["source"]
 
             with open(output[0], "w") as f:
                 json.dump(data, f)
+
+
+
+if (UKPN_DATA_CENTERS_DATASET := dataset_version("ukpn_data_centers"))["source"] in [
+    "primary"
+]:
+
+    rule retrieve_ukpn_data_center_demand_profiles:
+        message:
+            "Retrieving UKPN data center demand profiles data"
+        input:
+            csv=storage(UKPN_DATA_CENTERS_DATASET["url"]),
+        output:
+            csv=f"{UKPN_DATA_CENTERS_DATASET['folder']}/ukpn-data-center-demand-profiles.csv",
+        threads: 1
+        resources:
+            mem_mb=1000,
+        log:
+            "logs/retrieve_data_center_demand_profiles",
+        benchmark:
+            "benchmarks/retrieve_data_center_demand_profiles"
+        run:
+            copy2(input["csv"], output["csv"])
