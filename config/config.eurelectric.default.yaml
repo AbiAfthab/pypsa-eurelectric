@@ -14,7 +14,7 @@
 # =============================================================================
 run:
   prefix: "2026-05-16"
-  name: "myopic_ccl_loadshedding"
+  name: "Myopic-2030-2040-2050"
   disable_progressbar: true
   shared_cutouts: true
 
@@ -33,6 +33,13 @@ scenario:
 
 costs:
   year: 2030
+  # ETS-like CO2 prices (EUR/t); applied in prepare_sector_network per horizon
+  emission_prices:
+    enable: true
+    co2:
+      2030: 70
+      2040: 90
+      2050: 100
 
 co2_budget:
   2030: 0.45
@@ -521,6 +528,30 @@ transmission_projects:
     tyndp2020: true
     nep: false
     manual: true
+
+# =============================================================================
+# DATA CENTERS
+# =============================================================================
+data_center:
+  dsr:
+    enable: true
+    capital_cost: 0.1
+    marginal_cost: 0.1
+    p_pct_nom: 0.05
+    shift_hours: 12
+  load:
+    profile: High Voltage Import
+    profile_year: 2024
+  "on-site generation":
+    enable: false
+    p_pct_nom: 0.2
+    reference_technology: OCGT
+  "on-site storage":
+    enable: false
+    p_pct_nom: 0.2
+    shift_hours: 6
+    reference_technology: battery
+  grid_connection: "Grid to data center"
 
 # =============================================================================
 # SOLVING SETTINGS
