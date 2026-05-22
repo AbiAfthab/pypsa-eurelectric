@@ -153,6 +153,27 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
 
     if dsr["enable"]:
         n.add(
+            "Bus",
+            name=data_center_demand_buses,
+            suffix=" (DSR)",
+            carrier="low voltage",
+            unit="MWh_el",
+        )
+
+        dsr_buses = n.buses[n.buses.index.str.contains("(DSR)")].index
+
+        n.add(
+            "Link",
+            name=dsr_buses,
+            suffix=" demand link",
+            bus0=data_center_demand_buses,
+            bus1=dsr_buses,
+            p_min_pu=-1,
+            p_max_pu=1,
+            p_nom=load_nom.values.flatten() * dsr["p_pct_nom"],
+        )
+
+        n.add(
             "Store",
             name=data_center_demand_buses,
             suffix=" (DSR)",
