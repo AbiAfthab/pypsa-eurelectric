@@ -411,9 +411,7 @@ if (CUTOUT_DATASET := dataset_version("cutout"))["source"] in [
             mem_mb=5000,
         retries: 2
         run:
-            print("skip")
-            # print(CUTOUT_DATASET['folder'])
-            # copy2(input[0], output[0])
+            copy2(input[0], output[0])
 
 
 
