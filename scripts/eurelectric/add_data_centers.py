@@ -78,6 +78,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
     nodal_distribution = pd.read_csv(load_nodal_distribution_fn, index_col=["name"])
 
     load_nom = nodal_distribution / utilization_hours
+
     load = pd.DataFrame(
         np.outer(load_profile.values, load_nom.values),
         index=load_profile.index,
@@ -114,7 +115,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
         suffix=" site link",
         bus0=buses,
         bus1=data_center_sites,
-        p_nom=1e8,
+        p_nom=load_nom.values.flatten(),
         p_min_pu=-1 * dc_to_grid,
         p_max_pu=1 * grid_to_dc,
     )
@@ -140,7 +141,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
         bus1=data_center_demand_buses,
         p_min_pu=0,
         p_max_pu=1,
-        p_nom=np.inf,
+        p_nom=load_nom.values.flatten(),
     )
 
     n.add(
@@ -177,7 +178,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
             "Store",
             name=data_center_demand_buses,
             suffix=" (DSR)",
-            bus=data_center_demand_buses,
+            bus=dsr_buses,
             e_cyclic=True,
             e_nom=load_nom.values.flatten() * dsr["p_pct_nom"] * dsr["shift_hours"],
             capital_cost=dsr["capital_cost"],
