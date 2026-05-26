@@ -13,8 +13,8 @@
 # RUN SETTINGS
 # =============================================================================
 run:
-  prefix: "2026-05-16"
-  name: "myopic_ccl_loadshedding"
+  prefix: "2026-05-24"
+  name: "Myopic-2030-2040"
   disable_progressbar: true
   shared_cutouts: true
 
@@ -33,6 +33,12 @@ scenario:
 
 costs:
   year: 2030
+  # ETS-like CO2 prices (EUR/t); applied in prepare_sector_network per horizon
+  emission_prices:
+    enable: true
+    co2:
+      2030: 100
+      2040: 171
 
 co2_budget:
   2030: 0.45
@@ -160,6 +166,10 @@ data:
 # SECTOR COUPLING SETTINGS
 # =============================================================================
 sector:
+  #enforcing min battery capacity. data from TYNDP_2026
+  battery_p_nom_min_enable: true
+  battery_p_nom_min_file: data/battery_p_nom_min.csv
+  battery_p_nom_min_include_existing: true   # recommended: subtract fixed capacity
   # Disabled features for eurelectric runs
   gas_network: true
   H2_network: false
@@ -185,22 +195,18 @@ sector:
     2020: 1.01
     2030: 1.03
     2040: 1.06
-    2050: 1.09
   land_transport_truck_km_scaling:
     2020: 1.01
     2030: 1.03
     2040: 1.06
-    2050: 1.09
   land_transport_van_km_scaling:
     2020: 1.01
     2030: 1.03
     2040: 1.06
-    2050: 1.09
   land_transport_bus_km_scaling:
     2020: 1.01
     2030: 1.03
     2040: 1.06
-    2050: 1.09
 
   # Per-country, per-segment fuel shares (electric / fuel_cell / ice). Same CSV layout
   # as data/agg_p_nom_minmax.csv: two header rows (year × fuel), index columns country, segment.
@@ -250,7 +256,6 @@ sector:
     2035: 100
     2040: 240
     2045: 250
-    2050: 250  
 
     # Truck fuel shares
   land_transport_truck_fuel_cell_share:
@@ -260,7 +265,6 @@ sector:
     2035: 0.10
     2040: 0.20
     2045: 0.30
-    2050: 0.40
   land_transport_truck_electric_share:
     2020: 0
     2025: 0
@@ -268,7 +272,6 @@ sector:
     2035: 0.15
     2040: 0.30
     2045: 0.45
-    2050: 0.60
   land_transport_truck_ice_share:
     2020: 1
     2025: 1
@@ -276,7 +279,6 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
-    2050: 0.00 
     # Van fuel shares
   land_transport_van_fuel_cell_share:
     2020: 0
@@ -285,7 +287,6 @@ sector:
     2035: 0.10
     2040: 0.20
     2045: 0.30
-    2050: 0.40
   land_transport_van_electric_share:
     2020: 0
     2025: 0
@@ -293,7 +294,6 @@ sector:
     2035: 0.15
     2040: 0.30
     2045: 0.45
-    2050: 0.60
   land_transport_van_ice_share:
     2020: 1
     2025: 1
@@ -301,7 +301,6 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
-    2050: 0.00 
     # Bus fuel shares
   land_transport_bus_fuel_cell_share:
     2020: 0
@@ -310,7 +309,6 @@ sector:
     2035: 0.10
     2040: 0.20
     2045: 0.30
-    2050: 0.40
   land_transport_bus_electric_share:
     2020: 0
     2025: 0
@@ -318,7 +316,6 @@ sector:
     2035: 0.15
     2040: 0.30
     2045: 0.45
-    2050: 0.60
   land_transport_bus_ice_share:
     2020: 1
     2025: 1
@@ -326,7 +323,6 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
-    2050: 0.00 
 
 # For Electric Efficiency: https://ev-database.org/de/cheatsheet/energy-consumption-electric-car
   # Light : average energy consumption 188 Wh/km = 0.188 kWh/km = 18.8 kWh/100 km = 0.0188 MWh/ 100 km
@@ -523,11 +519,35 @@ transmission_projects:
     manual: true
 
 # =============================================================================
+# DATA CENTERS
+# =============================================================================
+data_center:
+  dsr:
+    enable: false
+    capital_cost: 0.1
+    marginal_cost: 0.1
+    p_pct_nom: 0.05
+    shift_hours: 12
+  load:
+    profile: High Voltage Import
+    profile_year: 2024
+  "on-site generation":
+    enable: false
+    p_pct_nom: 0.2
+    reference_technology: OCGT
+  "on-site storage":
+    enable: false
+    p_pct_nom: 0.2
+    shift_hours: 6
+    reference_technology: battery
+  grid_connection: "Grid to data center"
+
+# =============================================================================
 # SOLVING SETTINGS
 # =============================================================================
 solving:
   options:
-    assign_all_duals: false
+    assign_all_duals: true
   agg_p_nom_limits:
     agg_offwind: true
     agg_solar: true
