@@ -92,6 +92,9 @@ countries:
 
 electricity:
   renewable_carriers: [solar, solar-hsat, onwind, offwind-ac, offwind-dc, offwind-float, hydro]
+  # No new OCGT/CCGT as Generators — fossil gas can only come from brownfield
+  # capacity in `conventional_carriers`. NOTE: gas can still appear via the
+  # sector backdoor (`sector.chp.fuel: [gas]` and `sector.conventional_generation`).
   extendable_carriers:
     Generator:
       [
@@ -101,8 +104,6 @@ electricity:
         offwind-ac,
         offwind-dc,
         offwind-float,
-        OCGT,
-        CCGT,
       ]
     StorageUnit: [battery]
     Store: [H2]
@@ -149,7 +150,9 @@ renewable:
 # =============================================================================
 clustering:
   temporal:
-    resolution_sector: 3h
+    # 2920SEG = adaptive segmentation equivalent to 3h average (8760/3),
+    # better at capturing peaks than fixed 3h resampling at the same cost.
+    resolution_sector: "2920SEG"
 
 # =============================================================================
 # DATASETS (override defaults from config.default.yaml)
@@ -548,11 +551,21 @@ data_center:
 solving:
   options:
     assign_all_duals: true
+    # Load-shedding fall-back: with no new gas Generators and no demand-side
+    # flexibility, peak-hour scarcity is priced explicitly at 10 000 EUR/MWh
+    # instead of returning infeasible.
+    load_shedding:
+      enable: true
+      default_cost: 10000
+      all_carriers: true
+      carriers: {}
   agg_p_nom_limits:
     agg_offwind: true
     agg_solar: true
     include_existing: true
-    file: data/agg_p_nom_valideted_cap.csv
+    # No-max CCL: every 2030/2040/2050 `max` cell is blank, so only the
+    # validated `min` floors are enforced.
+    file: data/agg_p_nom_TEST_NOMAX.csv
   constraints:
     CCL: true
     EQ: false

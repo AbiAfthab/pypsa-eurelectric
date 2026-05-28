@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: Contributors to PyPSA-Eurelectric
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# Run with
+# snakemake --configfiles config/config.eurelectric.default.yaml config/run_2026-05/no-flexibility.yaml
+
+# =============================================================================
+# RUN SETTINGS
+# =============================================================================
+run:
+  prefix: "Myopic-2030-2040"
+  name: "no_flexibility"
+
+# =============================================================================
+# SECTOR COUPLING SETTINGS
+# =============================================================================
+sector:
+  residential_heat:
+    dsm:
+      enable: false
+  methanol:
+    methanol_to_power:
+      ocgt: false
+
+  # Electric vehicle flexibility disabled
+  bev_dsm: false
+  v2g: false
+
+# =============================================================================
+# INDUSTRY SETTINGS
+# =============================================================================
+industry:
+  dsr:
+    enable: false
+  
+  # Needs to be enabled even for no-flex scnenarios to ensure that industry load
+  # is temporally resolved and can be shifted in time by the DSR model if enabled.
+  temporal_electricity_industry_load: true
+
+# =============================================================================
+# DATA CENTERS
+# =============================================================================
+data_center:
+  dsr:
+    enable: false
