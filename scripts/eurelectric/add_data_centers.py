@@ -172,6 +172,11 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
             p_min_pu=-1,
             p_max_pu=1,
             p_nom=load_nom.values.flatten() * dsr["p_pct_nom"],
+            committable=True,
+            start_up_cost=0.1,
+            shut_down_cost=0.1,
+            ramp_limit_start_up=0.5,
+            ramp_limit_shut_down=0.5,
         )
 
         n.add(
@@ -183,6 +188,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
             e_nom=load_nom.values.flatten() * dsr["p_pct_nom"] * dsr["shift_hours"],
             capital_cost=dsr["capital_cost"],
             marginal_cost=dsr["marginal_cost"],
+            # marginal_cost_storage=0.1,
         )
 
     # add onsite storage
