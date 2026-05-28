@@ -42,7 +42,10 @@ costs:
 
 co2_budget:
   2030: 0.45
-  2040: 0.1
+  # 2040: 0.15 corresponds to 85% reduction vs 1990 (relaxed from previous
+  # 90% reduction). Combined with no new OCGT/CCGT Generators below, this is
+  # the climate-cap setting used by the 10countries batmin scenarios.
+  2040: 0.15
 # =============================================================================
 # ATLITE / CUTOUTS
 # =============================================================================
@@ -92,6 +95,9 @@ countries:
 
 electricity:
   renewable_carriers: [solar, solar-hsat, onwind, offwind-ac, offwind-dc, offwind-float, hydro]
+  # No new OCGT/CCGT as Generators — fossil gas can only come from brownfield
+  # capacity in `conventional_carriers`. NOTE: gas can still appear via the
+  # sector backdoor (`sector.chp.fuel: [gas]` and `sector.conventional_generation`).
   extendable_carriers:
     Generator:
       [
@@ -101,13 +107,13 @@ electricity:
         offwind-ac,
         offwind-dc,
         offwind-float,
-        OCGT,
-        CCGT,
       ]
     StorageUnit: [battery]
     Store: [H2]
     Link: []
-  transmission_limit: "v1.25"
+  # v1.5 = +50% AC+DC line volume vs today's grid. Eases the binding lv_limit
+  # shadow seen in the 10countries 2040 batmin runs.
+  transmission_limit: "v1.5"
 
 # =============================================================================
 # RENEWABLE — per-country offshore potential overrides (BE / DE)
@@ -149,7 +155,10 @@ renewable:
 # =============================================================================
 clustering:
   temporal:
-    resolution_sector: 3h
+    # 2920SEG = ~3h equivalent via adaptive segmentation (captures peaks better
+    # than fixed 3h sampling at the same number of timesteps). Switch back to
+    # "3h" or "1460SEG" (6h) only if memory/time is an issue.
+    resolution_sector: "2920SEG"
 
 # =============================================================================
 # DATASETS (override defaults from config.default.yaml)
@@ -522,8 +531,11 @@ transmission_projects:
 # DATA CENTERS
 # =============================================================================
 data_center:
+  # DC DSR: ON by default in eurelectric runs (previously false in upstream
+  # default — the silent default caused 176 TWh of DC load to be modelled as
+  # inflexible in earlier runs). Override to false for "noflex" sensitivities.
   dsr:
-    enable: false
+    enable: true
     capital_cost: 0.1
     marginal_cost: 0.1
     p_pct_nom: 0.05
@@ -547,12 +559,25 @@ data_center:
 # =============================================================================
 solving:
   options:
+    # Collect shadow prices (duals) for every constraint — needed for CCL,
+    # lv_limit, CO2, sequestration shadow analysis.
     assign_all_duals: true
+    # Load-shedding fall-back at 10 000 EUR/MWh so peak-hour scarcity is priced
+    # explicitly instead of returning infeasible (especially relevant when new
+    # OCGT/CCGT Generators are disabled).
+    load_shedding:
+      enable: true
+      default_cost: 10000
+      all_carriers: true
+      carriers: {}
   agg_p_nom_limits:
     agg_offwind: true
     agg_solar: true
     include_existing: true
-    file: data/agg_p_nom_valideted_cap.csv
+    # NOMAX = validated `min` floors only; `max` columns blanked so the model
+    # is free to overbuild any RES carrier where economic. Switch back to
+    # `data/agg_p_nom_valideted_cap.csv` for runs with capped maxes.
+    file: data/agg_p_nom_TEST_NOMAX.csv
   constraints:
     CCL: true
     EQ: false
