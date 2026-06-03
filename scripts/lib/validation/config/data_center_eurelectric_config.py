@@ -34,6 +34,10 @@ class _DataCenterDSRConfig(ConfigModel):
         6,
         description="Maximum hours that load can be shifted forward or backward.",
     )
+    # marginal_cost_storage: float = Field(
+    #     2,
+    #     description="Cost of storing 1 MWh for 1 hour in the virtual DSR store."
+    # )
 
 
 class _DataCenterGenerationConfig(ConfigModel):
@@ -96,6 +100,7 @@ class _DataCenterLoadConfig(ConfigModel):
     profile_year: int = Field(
         2024, description="Year of  UKPN data set to use for load profile"
     )
+
 
 class DataCenterConfigSection(BaseModel):
     dsr: bool = Field(

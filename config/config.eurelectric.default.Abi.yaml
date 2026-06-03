@@ -13,7 +13,7 @@
 # RUN SETTINGS
 # =============================================================================
 run:
-  prefix: "2026-05-14"
+  prefix: "20260602"
   name: "Myopic-2030-2040"
   disable_progressbar: true
   shared_cutouts: true
@@ -22,14 +22,14 @@ foresight: myopic
 
 scenario:
   clusters:
-    - 37
+  - 37
   opts:
-    - ""
+  - ""
   sector_opts:
-    - ""
+  - ""
   planning_horizons:
-    - 2030
-    - 2040
+  - 2030
+    # - 2040
 
 costs:
   year: 2030
@@ -49,57 +49,47 @@ atlite:
 # =============================================================================
 snapshots:
   start: "2019-01-01"
-  end: "2020-01-01"
+  end: "2019-01-08"
   inclusive: left
 # =============================================================================
 # COUNTRIES
 # =============================================================================
 # EU27 + UK + Norway + Switzerland (excludes Balkans: AL, BA, ME, MK, RS, XK)
 countries:
-  - AT
-  - BE
-  - BG
-  - CH
-  - CZ
-  - DE
-  - DK
-  - EE
-  - ES
-  - FI
-  - FR
-  - GB
-  - GR
-  - HR
-  - HU
-  - IE
-  - IT
-  - LT
-  - LU
-  - LV
-  - NL
-  - "NO"
-  - PL
-  - PT
-  - RO
-  - SE
-  - SI
-  - SK
+- AT
+- BE
+- BG
+- CH
+- CZ
+- DE
+- DK
+- EE
+- ES
+- FI
+- FR
+- GB
+- GR
+- HR
+- HU
+- IE
+- IT
+- LT
+- LU
+- LV
+- NL
+- "NO"
+- PL
+- PT
+- RO
+- SE
+- SI
+- SK
 
 
 electricity:
   renewable_carriers: [solar, solar-hsat, onwind, offwind-ac, offwind-dc, offwind-float, hydro]
   extendable_carriers:
-    Generator:
-      [
-        solar,
-        solar-hsat,
-        onwind,
-        offwind-ac,
-        offwind-dc,
-        offwind-float,
-        OCGT,
-        CCGT,
-      ]
+    Generator: [solar, solar-hsat, onwind, offwind-ac, offwind-dc, offwind-float, OCGT, CCGT]
     StorageUnit: [battery]
     Store: [H2]
     Link: []
@@ -131,23 +121,23 @@ renewable:
   # default (`correction_factor: 0.8855`).
   "offwind-ac":
     country_potential_overrides:
-      BE: { capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0 }
-      DE: { capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0 }
+      BE: {capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0}
+      DE: {capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0}
   "offwind-dc":
     country_potential_overrides:
-      BE: { capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0 }
-      DE: { capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0 }
+      BE: {capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0}
+      DE: {capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0}
   "offwind-float":
     country_potential_overrides:
-      BE: { capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0 }
-      DE: { capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0 }
+      BE: {capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0}
+      DE: {capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0}
 
 # =============================================================================
 # CLUSTERING
 # =============================================================================
 clustering:
   temporal:
-    resolution_sector: 3h
+    resolution_sector: 3H
 
 # =============================================================================
 # DATASETS (override defaults from config.default.yaml)
@@ -180,8 +170,8 @@ sector:
     dsm:
       enable: true
       direction:
-        - overheat
-        - undercool
+      - overheat
+      - undercool
       restriction_value:
         2030: 0.25
         2040: 0.37
@@ -254,7 +244,11 @@ sector:
     2035: 100
     2040: 240
     2045: 250
-    2050: 250  
+    2050: 250
+
+  transport_passenger_electric_efficiency: 53.19
+  transport_passenger_fuel_cell_efficiency: 30.003
+  transport_passenger_ice_efficiency: 16.0712
 
     # Truck fuel shares
   land_transport_truck_fuel_cell_share:
@@ -280,7 +274,7 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
-    2050: 0.00 
+    2050: 0.00
     # Van fuel shares
   land_transport_van_fuel_cell_share:
     2020: 0
@@ -305,7 +299,7 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
-    2050: 0.00 
+    2050: 0.00
     # Bus fuel shares
   land_transport_bus_fuel_cell_share:
     2020: 0
@@ -330,7 +324,7 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
-    2050: 0.00 
+    2050: 0.00
 
   For Electric Efficiency: https://ev-database.org/de/cheatsheet/energy-consumption-electric-car
   # Light : average energy consumption 188 Wh/km = 0.188 kWh/km = 18.8 kWh/100 km = 0.0188 MWh/ 100 km
@@ -339,7 +333,6 @@ sector:
   # Vans: https://www.preprints.org/manuscript/202511.1882/v1/download
     # assume 25 kWh/100 km = 0.025 MWh/100 km
   # Heavy: assume 40 kWh/100 km = 0.04 MWh/100 km
-    
 
 # For Fuel Cell efficiency:  https://h2-mobility.de/wp-content/uploads/2021/02/H2M_Flottenpapier_English_20180822.pdf
     # Light: assume in average 1kg_H2 per 100 km -> 1kg_H2 = 33 kWh_H2 (LHV)
@@ -364,7 +357,7 @@ sector:
   transport_truck_electric_efficiency: 25
   transport_truck_fuel_cell_efficiency: 3.565
   transport_truck_ice_efficiency: 3.75
-  
+
   transport_van_electric_efficiency: 40
   transport_van_fuel_cell_efficiency: 30.003
   transport_van_ice_efficiency: 15.6
