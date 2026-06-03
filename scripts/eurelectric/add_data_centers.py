@@ -48,6 +48,8 @@ def get_load_profile(
         .set_index("utc_timestamp")
     )
 
+    df_profile_year_grouped = df_profile_year_grouped.replace(0, None).ffill()
+
     return df_profile_year_grouped
 
 
@@ -118,6 +120,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
         p_nom=load_nom.values.flatten(),
         p_min_pu=-1 * dc_to_grid,
         p_max_pu=1 * grid_to_dc,
+        carrier="electricity distribution grid",
     )
 
     # add second bus to constrain the demand (including any feedback from DSR) to be positive
@@ -142,6 +145,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
         p_min_pu=0,
         p_max_pu=1,
         p_nom=load_nom.values.flatten(),
+        carrier="electricity distribution grid",
     )
 
     n.add(
@@ -150,6 +154,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
         bus=data_center_demand_buses,
         # p_nom=load_nom.values,
         p_set=load.values,
+        carrier="electricity",
     )
 
     if dsr["enable"]:
@@ -177,18 +182,21 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
             shut_down_cost=0.1,
             ramp_limit_start_up=0.5,
             ramp_limit_shut_down=0.5,
+            carrier="low voltage",
         )
 
         n.add(
             "Store",
-            name=data_center_demand_buses,
-            suffix=" (DSR)",
+            name=dsr_buses,
             bus=dsr_buses,
             e_cyclic=True,
             e_nom=load_nom.values.flatten() * dsr["p_pct_nom"] * dsr["shift_hours"],
             capital_cost=dsr["capital_cost"],
             marginal_cost=dsr["marginal_cost"],
-            # marginal_cost_storage=0.1,
+            # marginal_cost_storage=dsr["marginal_cost_storage"],
+            carrier="battery",
+            e_min_pu=0,
+            e_max_pu=1,
         )
 
     # add onsite storage
@@ -207,6 +215,8 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
             marginal_cost=ref_stores["marginal_cost"],
             capital_cost=ref_stores["capital_cost"],
             carrier=storage["reference_technology"],
+            e_min_pu=0,
+            e_max_pu=1,
         )
 
     # add onsite generation
