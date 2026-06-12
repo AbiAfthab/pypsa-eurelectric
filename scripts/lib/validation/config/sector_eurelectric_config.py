@@ -21,6 +21,9 @@ class SectorEurelectricConfigUpdater(ConfigUpdater):
 
     Extends the PyPSA-Eur schema with:
     - sector.land_transport_passenger_km_scaling: Transport demand scaling
+    - sector.land_transport_truck_km_scaling: Truck transport demand scaling
+    - sector.land_transport_van_km_scaling: Van transport demand scaling
+    - sector.land_transport_bus_km_scaling: Bus transport demand scaling
     - sector.battery_p_nom_min_*: Battery minimum installed capacity options
     """
 
@@ -48,6 +51,27 @@ class SectorEurelectricConfigUpdater(ConfigUpdater):
                 Field(
                     default_factory=dict,
                     description="Year-indexed scaling factors for land transport passenger-km demand. Maps planning horizon year to scaling factor (e.g., {2030: 1.03, 2040: 1.06}).",
+                ),
+            ),
+            land_transport_truck_km_scaling=(
+                dict[int, float],
+                Field(
+                    default_factory=dict,
+                    description="Year-indexed scaling factors for land transport truck-km demand.",
+                ),
+            ),
+            land_transport_van_km_scaling=(
+                dict[int, float],
+                Field(
+                    default_factory=dict,
+                    description="Year-indexed scaling factors for land transport van-km demand.",
+                ),
+            ),
+            land_transport_bus_km_scaling=(
+                dict[int, float],
+                Field(
+                    default_factory=dict,
+                    description="Year-indexed scaling factors for land transport bus-km demand.",
                 ),
             ),
             battery_p_nom_min_enable=(

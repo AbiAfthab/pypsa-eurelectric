@@ -282,6 +282,7 @@ renewable:
     excluder_resolution: 200
     clip_p_max_pu: 0.01
     landfall_length: 20.0
+    country_potential_overrides:
   "offwind-dc":
     cutout: default
     resource:
@@ -303,6 +304,7 @@ renewable:
     excluder_resolution: 200
     clip_p_max_pu: 0.01
     landfall_length: 30.0
+    country_potential_overrides:
   "offwind-float":
     cutout: default
     resource:
@@ -324,6 +326,7 @@ renewable:
     excluder_resolution: 200
     clip_p_max_pu: 0.01
     landfall_length: 40.0
+    country_potential_overrides:
   solar:
     cutout: default
     resource:
@@ -762,11 +765,9 @@ sector:
     2040: 0.3
     2045: 0.15
     2050: 0
-  
-
-  transport_passenger_electric_efficiency: 53.19
-  transport_passenger_fuel_cell_efficiency: 30.003
-  transport_passenger_ice_efficiency: 16.0712
+  transport_electric_efficiency: 53.19
+  transport_fuel_cell_efficiency: 30.003
+  transport_ice_efficiency: 16.0712
   agriculture_machinery_electric_share: 0.5
   agriculture_machinery_oil_share: 0.5
   agriculture_machinery_fuel_efficiency: 0.7
@@ -983,6 +984,9 @@ sector:
   land_transport_truck_km_scaling: {}
   land_transport_van_km_scaling: {}
   land_transport_bus_km_scaling: {}
+  battery_p_nom_min_enable: false
+  battery_p_nom_min_file: data/battery_p_nom_min.csv
+  battery_p_nom_min_include_existing: true
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#industry
 industry:
@@ -1155,7 +1159,7 @@ solving:
   options:
     clip_p_max_pu: 0.01
     load_shedding:
-      enable: true
+      enable: false
       default_cost: 100000
       all_carriers: true
       carriers: {}
@@ -1198,7 +1202,7 @@ solving:
   agg_p_nom_limits:
     agg_offwind: false
     agg_solar: false
-    include_existing: true
+    include_existing: false
     file: data/agg_p_nom_minmax.csv
   constraints:
     CCL: false
