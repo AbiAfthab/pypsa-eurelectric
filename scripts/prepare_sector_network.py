@@ -2572,7 +2572,7 @@ def add_ice_cars(
     if not options["regional_oil_demand"]:
         profile = profile.sum(axis=1).to_frame(name=f"EU land transport oil {mode}")
 
-    land_transport_oil_buses = profile.columns    
+    land_transport_oil_buses = profile.columns
 
     # Add transport oil buses
     n.add(
@@ -2603,6 +2603,7 @@ def add_ice_cars(
         efficiency2=costs.at["oil", "CO2 intensity"],
         p_nom_extendable=True,
     )
+
 
 def load_battery_p_nom_min_table(
     path: str,
@@ -2659,6 +2660,7 @@ def load_battery_p_nom_min_table(
     mins.name = "p_nom_min_mw"
     return mins
 
+
 def _node_from_storage_unit(su_index: str) -> str:
     return su_index[: -len(" battery")]
 
@@ -2682,6 +2684,7 @@ def _distribute_country_min_by_pop(
         weights = weights / weights.sum()
     return remaining_min * weights
 
+
 def apply_battery_p_nom_min(
     n: pypsa.Network,
     limits: pd.Series,
@@ -2695,6 +2698,7 @@ def apply_battery_p_nom_min(
     population weights from ``pop_layout``. Utility floors apply to grid
     ``StorageUnit`` (carrier ``battery``); home floors apply to charger and
     discharger ``Link`` components (carrier ``home battery`` in CSV).
+
     Parameters
     ----------
     n : pypsa.Network
@@ -2729,9 +2733,7 @@ def apply_battery_p_nom_min(
         if country_min_mw <= 0:
             continue
         if carrier == "battery":
-            ext = n.storage_units.query(
-                'carrier == "battery" and p_nom_extendable'
-            )
+            ext = n.storage_units.query('carrier == "battery" and p_nom_extendable')
             if ext.empty:
                 logger.warning(
                     "Battery p_nom_min: %s has %.3f GW policy but no extendable "
@@ -2941,6 +2943,7 @@ def load_land_transport_fuel_shares_table(
 
     return block
 
+
 def build_land_transport_per_node_shares(
     n: pypsa.Network,
     nodes,
@@ -2983,10 +2986,10 @@ def build_land_transport_per_node_shares(
     fuels = ("electric", "fuel_cell", "ice")
     segments = ("passenger", "truck", "van", "bus")
 
-    
     def fallback_scalar(segment: str, fuel: str) -> float:
         opt_key = keymap_freight[segment][fuel]
         return float(get(options[opt_key], investment_year))
+
     use_csv = bool(
         options.get("land_transport_fuel_shares_enable")
         and land_transport_fuel_shares_file
@@ -3014,7 +3017,6 @@ def build_land_transport_per_node_shares(
                 s.index = nodes_idx
             out[segment][fuel] = s.reindex(nodes_idx)
     return out
-
 
 
 def add_land_transport(
@@ -3088,27 +3090,34 @@ def add_land_transport(
 
     # read in transport demand in units driven km [100 km]
     transport = pd.read_csv(
-    transport_demand_file, index_col=0, parse_dates=True, header=[0, 1])
+        transport_demand_file, index_col=0, parse_dates=True, header=[0, 1]
+    )
     transport_data = pd.read_csv(transport_data_file, index_col=0)
     number_cars_passenger = transport_data["number cars"]
     number_truck = transport_data["hgv_stock"]
     number_van = transport_data["lcv_stock"]
     number_bus = transport_data["bus_stock"]
-    avail_profile_pkw = pd.read_csv(avail_profile_pkw_file, index_col=0, parse_dates=True)
-    avail_profile_bus = pd.read_csv(avail_profile_bus_file, index_col=0, parse_dates=True)
+    avail_profile_pkw = pd.read_csv(
+        avail_profile_pkw_file, index_col=0, parse_dates=True
+    )
+    avail_profile_bus = pd.read_csv(
+        avail_profile_bus_file, index_col=0, parse_dates=True
+    )
     avail_profile_hd = pd.read_csv(avail_profile_hd_file, index_col=0, parse_dates=True)
-    avail_profile_lfw = pd.read_csv(avail_profile_lfw_file, index_col=0, parse_dates=True)
+    avail_profile_lfw = pd.read_csv(
+        avail_profile_lfw_file, index_col=0, parse_dates=True
+    )
     dsm_profile = pd.read_csv(dsm_profile_file, index_col=0, parse_dates=True)
-    
+
     share_node = build_land_transport_per_node_shares(
-    n=n,
-    nodes=nodes,
-    options=options,
-    investment_year=investment_year,
-    land_transport_fuel_shares_file=land_transport_fuel_shares_file,
+        n=n,
+        nodes=nodes,
+        options=options,
+        investment_year=investment_year,
+        land_transport_fuel_shares_file=land_transport_fuel_shares_file,
     )
 
-     # Optional: log mass-weighted mean share (scalar summary)
+    # Optional: log mass-weighted mean share (scalar summary)
     if logger:
         for segment in ("passenger", "truck", "van", "bus"):
             for fuel in ("electric", "fuel_cell", "ice"):
@@ -3116,13 +3125,11 @@ def add_land_transport(
                     f"{segment} mean {fuel} share: "
                     f"{share_node[segment][fuel].mean() * 100:.2f}%"
                 )
-    
 
     p_set_passenger = transport["passenger"][nodes]
     p_set_truck = transport["truck"][nodes]
     p_set_van = transport["van"][nodes]
     p_set_bus = transport["bus"][nodes]
-    
 
     # temperature for correction factor for heating/cooling
     temperature = xr.open_dataarray(temp_air_total_file).to_pandas()
@@ -3167,16 +3174,16 @@ def add_land_transport(
     if (share_node["truck"]["electric"] > 0).any():
         add_EVs(
             n,
-            avail_profile_hd,   
-            dsm_profile,     # temporary reuse
+            avail_profile_hd,
+            dsm_profile,  # temporary reuse
             p_set_truck,
             share_node["truck"]["electric"],
-            number_truck,     
+            number_truck,
             temperature,
             spatial,
             options,
             mode="truck",
-        )    
+        )
     if (share_node["truck"]["fuel_cell"] > 0).any():
         add_fuel_cell_cars(
             n=n,
@@ -3198,15 +3205,15 @@ def add_land_transport(
             spatial,
             options,
             mode="truck",
-        )   
+        )
 
     if (share_node["van"]["electric"] > 0).any():
         add_EVs(
             n,
-            avail_profile_lfw,  
-            dsm_profile,     # temporary reuse
+            avail_profile_lfw,
+            dsm_profile,  # temporary reuse
             p_set_van,
-            share_node["van"]["electric"] ,
+            share_node["van"]["electric"],
             number_van,
             temperature,
             spatial,
@@ -3238,12 +3245,11 @@ def add_land_transport(
             mode="van",
         )
 
-
     if (share_node["bus"]["electric"] > 0).any():
         add_EVs(
             n,
-            avail_profile_bus, 
-            dsm_profile,     # temporary reuse
+            avail_profile_bus,
+            dsm_profile,  # temporary reuse
             p_set_bus,
             share_node["bus"]["electric"],
             number_bus,
@@ -3276,9 +3282,6 @@ def add_land_transport(
             options,
             mode="bus",
         )
-
-
-
 
 
 def build_heat_demand(
@@ -7541,18 +7544,15 @@ if __name__ == "__main__":
         max_hours=max_hours,
     )
 
-    _battery_limits = None
-    if options.get("battery_p_nom_min_enable") and os.path.isfile(
-        options["battery_p_nom_min_file"]
-    ):
-        _battery_limits = load_battery_p_nom_min_table(
+    if options["battery_p_nom_min_enable"]:
+        battery_limits = load_battery_p_nom_min_table(
             options["battery_p_nom_min_file"], investment_year
         )
         apply_battery_p_nom_min(
-            n,
-            _battery_limits,
-            pop_layout,
-            include_existing=options.get("battery_p_nom_min_include_existing", True),
+            n=n,
+            limits=battery_limits,
+            pop_layout=pop_layout,
+            include_existing=options["battery_p_nom_min_include_existing"],
             carriers=["battery"],
         )
 
@@ -7755,16 +7755,12 @@ if __name__ == "__main__":
             n, costs, options, pop_layout, snakemake.input.solar_rooftop_potentials
         )
 
-    if (
-        _battery_limits is not None
-        and options.get("battery_p_nom_min_enable")
-        and options["electricity_distribution_grid"]
-    ):
+    if options["battery_p_nom_min_enable"] and options["electricity_distribution_grid"]:
         apply_battery_p_nom_min(
-            n,
-            _battery_limits,
-            pop_layout,
-            include_existing=options.get("battery_p_nom_min_include_existing", True),
+            n=n,
+            limits=battery_limits,
+            pop_layout=pop_layout,
+            include_existing=options["battery_p_nom_min_include_existing"],
             carriers=["home battery"],
         )
 
@@ -7789,7 +7785,7 @@ if __name__ == "__main__":
     if options["electricity_grid_connection"]:
         add_electricity_grid_connection(n, costs)
 
-    if snakemake.params["data_center"]:
+    if snakemake.params["data_center"]["enable"]:
         attach_data_centers(
             n=n,
             load_nodal_distribution_fn=snakemake.input.data_center_nodal_demand,
