@@ -362,6 +362,10 @@ sector:
     # 0.26667 MWh_petrol / 100 km
     # 1 MWh_petrol = 3.75
 
+  transport_passenger_electric_efficiency: 53.19
+  transport_passenger_fuel_cell_efficiency: 30.003
+  transport_passenger_ice_efficiency: 16.0712
+
   transport_truck_electric_efficiency: 25
   transport_truck_fuel_cell_efficiency: 3.565
   transport_truck_ice_efficiency: 3.75
