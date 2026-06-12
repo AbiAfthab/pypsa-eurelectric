@@ -1642,10 +1642,12 @@ rule prepare_sector_network:
         temperature_limited_stores=config_provider(
             "sector", "district_heating", "temperature_limited_stores"
         ),
-        battery_p_nom_min=lambda w: (config_provider("sector", "battery_p_nom_min_file")(w) 
-        if config_provider("sector", "battery_p_nom_min_enable")(w) else []
+        battery_p_nom_min=lambda w: (
+            config_provider("sector", "battery_p_nom_min_file")(w)
+            if config_provider("sector", "battery_p_nom_min_enable")(w)
+            else []
         ),
-        data_center=config_provider("data_center"),
+        data_center=lambda w: config_provider("data_center")(w),
     input:
         unpack(input_profile_offwind),
         unpack(input_heat_source_power),
@@ -1691,7 +1693,9 @@ rule prepare_sector_network:
         avail_profile_hd=resources("avail_profile_hd_s_{clusters}.csv"),
         avail_profile_lfw=resources("avail_profile_lfw_s_{clusters}.csv"),
         dsm_profile=resources("dsm_profile_s_{clusters}.csv"),
-        land_transport_fuel_shares="data/land_transport_fuel_shares.csv",
+        land_transport_fuel_shares=lambda w: config_provider(
+            "sector", "land_transport_fuel_shares_file"
+        )(w),
         heat_dsm_profile=resources(
             "residential_heat_dsm_profile_total_base_s_{clusters}.csv"
         ),
