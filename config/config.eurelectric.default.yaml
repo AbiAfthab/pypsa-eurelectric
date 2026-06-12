@@ -540,6 +540,7 @@ data_center:
     marginal_cost: 0.1
     p_pct_nom: 0.05
     shift_hours: 12
+  enable: true
   load:
     profile: High Voltage Import
     profile_year: 2024

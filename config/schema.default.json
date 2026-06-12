@@ -901,6 +901,11 @@
             }
           }
         },
+        "enable": {
+          "default": true,
+          "description": "Enable/disable data center sector modeling. When disabled, removes all data center loads, generation, and storage from the network.",
+          "type": "boolean"
+        },
         "load": {
           "properties": {
             "profile": {
@@ -15050,6 +15055,11 @@
               "type": "number"
             }
           }
+        },
+        "enable": {
+          "default": true,
+          "description": "Enable/disable data center sector modeling. When disabled, removes all data center loads, generation, and storage from the network.",
+          "type": "boolean"
         },
         "load": {
           "properties": {

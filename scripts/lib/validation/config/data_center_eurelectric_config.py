@@ -147,6 +147,13 @@ class DataCenterEurelectricConfigUpdater(ConfigUpdater):
                     description="Data center demand-side response (DSR) configuration for modeling load flexibility.",
                 ),
             ),
+            enable=(
+                bool,
+                Field(
+                    True,
+                    description="Enable/disable data center sector modeling. When disabled, removes all data center loads, generation, and storage from the network.",
+                ),
+            ),
             load=(
                 _DataCenterLoadConfig,
                 Field(
