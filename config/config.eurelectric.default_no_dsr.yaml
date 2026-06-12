@@ -13,8 +13,8 @@
 # RUN SETTINGS
 # =============================================================================
 run:
-  prefix: "2026-05-24"
-  name: "Myopic-2030-2040"
+  prefix: "2026-05-25"
+  name: "Myopic-2030-2040_nodsr"
   disable_progressbar: true
   shared_cutouts: true
 
@@ -22,14 +22,14 @@ foresight: myopic
 
 scenario:
   clusters:
-  - 37
+    - 37
   opts:
-  - ""
+    - ""
   sector_opts:
-  - ""
+    - ""
   planning_horizons:
-  - 2030
-  - 2040
+    - 2030
+    - 2040
 
 costs:
   year: 2030
@@ -42,10 +42,7 @@ costs:
 
 co2_budget:
   2030: 0.45
-  # 2040: 0.15 corresponds to 85% reduction vs 1990 (relaxed from previous
-  # 90% reduction). Combined with no new OCGT/CCGT Generators below, this is
-  # the climate-cap setting used by the 10countries batmin scenarios.
-  2040: 0.15
+  2040: 0.1
 # =============================================================================
 # ATLITE / CUTOUTS
 # =============================================================================
@@ -111,9 +108,7 @@ electricity:
     StorageUnit: [battery]
     Store: [H2]
     Link: []
-  # v1.5 = +50% AC+DC line volume vs today's grid. Eases the binding lv_limit
-  # shadow seen in the 10countries 2040 batmin runs.
-  transmission_limit: "v1.5"
+  transmission_limit: "v1.25"
 
 # =============================================================================
 # RENEWABLE — per-country offshore potential overrides (BE / DE)
@@ -139,25 +134,24 @@ renewable:
   # default (`correction_factor: 0.8855`).
   "offwind-ac":
     country_potential_overrides:
-      BE: {capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0}
-      DE: {capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0}
+      BE: { capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0 }
+      DE: { capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0 }
   "offwind-dc":
     country_potential_overrides:
-      BE: {capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0}
-      DE: {capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0}
+      BE: { capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0 }
+      DE: { capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0 }
   "offwind-float":
     country_potential_overrides:
-      BE: {capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0}
-      DE: {capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0}
+      BE: { capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0 }
+      DE: { capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0 }
 
 # =============================================================================
 # CLUSTERING
 # =============================================================================
 clustering:
   temporal:
-    # 2920SEG = ~3h equivalent via adaptive segmentation (captures peaks better
-    # than fixed 3h sampling at the same number of timesteps). Switch back to
-    # "3h" or "1460SEG" (6h) only if memory/time is an issue.
+    # 2920SEG = adaptive segmentation equivalent to 3h average (8760/3),
+    # better at capturing peaks than fixed 3h resampling at the same cost.
     resolution_sector: "2920SEG"
 
 # =============================================================================
@@ -193,10 +187,10 @@ sector:
       2040: 0.21
   residential_heat:
     dsm:
-      enable: true
+      enable: false
       direction:
-      - overheat
-      - undercool
+        - overheat
+        - undercool
       restriction_value:
         2030: 0.25
         2040: 0.37
@@ -265,7 +259,6 @@ sector:
     2035: 100
     2040: 240
     2045: 250
-    2050: 250
 
     # Truck fuel shares
   land_transport_truck_fuel_cell_share:
@@ -289,7 +282,6 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
-    2050: 0.00
     # Van fuel shares
   land_transport_van_fuel_cell_share:
     2020: 0
@@ -312,7 +304,6 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
-    2050: 0.00
     # Bus fuel shares
   land_transport_bus_fuel_cell_share:
     2020: 0
@@ -335,7 +326,6 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
-    2050: 0.00
 
 # For Electric Efficiency: https://ev-database.org/de/cheatsheet/energy-consumption-electric-car
   # Light : average energy consumption 188 Wh/km = 0.188 kWh/km = 18.8 kWh/100 km = 0.0188 MWh/ 100 km
@@ -344,6 +334,7 @@ sector:
   # Vans: https://www.preprints.org/manuscript/202511.1882/v1/download
     # assume 25 kWh/100 km = 0.025 MWh/100 km
   # Heavy: assume 40 kWh/100 km = 0.04 MWh/100 km
+    
 
 # For Fuel Cell efficiency:  https://h2-mobility.de/wp-content/uploads/2021/02/H2M_Flottenpapier_English_20180822.pdf
     # Light: assume in average 1kg_H2 per 100 km -> 1kg_H2 = 33 kWh_H2 (LHV)
@@ -368,7 +359,7 @@ sector:
   transport_truck_electric_efficiency: 25
   transport_truck_fuel_cell_efficiency: 3.565
   transport_truck_ice_efficiency: 3.75
-
+  
   transport_van_electric_efficiency: 40
   transport_van_fuel_cell_efficiency: 30.003
   transport_van_ice_efficiency: 15.6
@@ -379,8 +370,8 @@ sector:
 
 
   # Electric vehicle flexibility
-  bev_dsm: true
-  v2g: true
+  bev_dsm: false
+  v2g: false
 
 # =============================================================================
 # INDUSTRY SETTINGS
@@ -403,7 +394,7 @@ industry:
   # Scenario-varying parameters (enable, store_capital_cost, flexibility_fraction)
   # should be overridden in run-specific configs.
   dsr:
-    enable: true
+    enable: false
     store_capital_cost: 5.0
     link_capital_cost: 0.0
     restriction_value: 1.0
@@ -534,11 +525,8 @@ transmission_projects:
 # DATA CENTERS
 # =============================================================================
 data_center:
-  # DC DSR: ON by default in eurelectric runs (previously false in upstream
-  # default — the silent default caused 176 TWh of DC load to be modelled as
-  # inflexible in earlier runs). Override to false for "noflex" sensitivities.
   dsr:
-    enable: true
+    enable: false
     capital_cost: 0.1
     marginal_cost: 0.1
     p_pct_nom: 0.05
@@ -562,12 +550,10 @@ data_center:
 # =============================================================================
 solving:
   options:
-    # Collect shadow prices (duals) for every constraint — needed for CCL,
-    # lv_limit, CO2, sequestration shadow analysis.
     assign_all_duals: true
-    # Load-shedding fall-back at 10 000 EUR/MWh so peak-hour scarcity is priced
-    # explicitly instead of returning infeasible (especially relevant when new
-    # OCGT/CCGT Generators are disabled).
+    # Load-shedding fall-back: with no new gas Generators and no demand-side
+    # flexibility, peak-hour scarcity is priced explicitly at 10 000 EUR/MWh
+    # instead of returning infeasible.
     load_shedding:
       enable: true
       default_cost: 10000
@@ -577,9 +563,8 @@ solving:
     agg_offwind: true
     agg_solar: true
     include_existing: true
-    # NOMAX = validated `min` floors only; `max` columns blanked so the model
-    # is free to overbuild any RES carrier where economic. Switch back to
-    # `data/agg_p_nom_valideted_cap.csv` for runs with capped maxes.
+    # No-max CCL: every 2030/2040/2050 `max` cell is blank, so only the
+    # validated `min` floors are enforced.
     file: data/agg_p_nom_TEST_NOMAX.csv
   constraints:
     CCL: true

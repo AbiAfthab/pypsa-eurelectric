@@ -1642,6 +1642,9 @@ rule prepare_sector_network:
         temperature_limited_stores=config_provider(
             "sector", "district_heating", "temperature_limited_stores"
         ),
+        battery_p_nom_min=lambda w: (config_provider("sector", "battery_p_nom_min_file")(w) 
+        if config_provider("sector", "battery_p_nom_min_enable")(w) else []
+        ),
         data_center=config_provider("data_center"),
     input:
         unpack(input_profile_offwind),
