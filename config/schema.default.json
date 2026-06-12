@@ -5448,6 +5448,179 @@
           "description": "Year-indexed scaling factors for land transport bus-km demand.",
           "type": "object"
         },
+        "land_transport_fuel_shares_enable": {
+          "default": false,
+          "description": "Enable loading per-country, per-segment land transport fuel shares from CSV.",
+          "type": "boolean"
+        },
+        "land_transport_fuel_shares_file": {
+          "default": "data/land_transport_fuel_shares.csv",
+          "description": "CSV file path with per-country, per-segment land transport fuel shares.",
+          "type": "string"
+        },
+        "pkw_bev_avail_max": {
+          "default": 0.95,
+          "description": "Maximum plugged-in availability for passenger BEVs.",
+          "type": "number"
+        },
+        "pkw_bev_avail_mean": {
+          "default": 0.8,
+          "description": "Mean plugged-in availability for passenger BEVs.",
+          "type": "number"
+        },
+        "bus_bev_avail_max": {
+          "default": 0.9,
+          "description": "Maximum plugged-in availability for bus BEVs.",
+          "type": "number"
+        },
+        "bus_bev_avail_mean": {
+          "default": 0.6,
+          "description": "Mean plugged-in availability for bus BEVs.",
+          "type": "number"
+        },
+        "hd_bev_avail_max": {
+          "default": 0.85,
+          "description": "Maximum plugged-in availability for heavy-duty BEVs.",
+          "type": "number"
+        },
+        "hd_bev_avail_mean": {
+          "default": 0.7,
+          "description": "Mean plugged-in availability for heavy-duty BEVs.",
+          "type": "number"
+        },
+        "lfw_bev_avail_max": {
+          "default": 0.92,
+          "description": "Maximum plugged-in availability for light commercial BEVs.",
+          "type": "number"
+        },
+        "lfw_bev_avail_mean": {
+          "default": 0.7,
+          "description": "Mean plugged-in availability for light commercial BEVs.",
+          "type": "number"
+        },
+        "land_transport_truck_fuel_cell_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed truck fuel-cell transport share.",
+          "type": "object"
+        },
+        "land_transport_truck_electric_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed truck electric transport share.",
+          "type": "object"
+        },
+        "land_transport_truck_ice_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed truck ICE transport share.",
+          "type": "object"
+        },
+        "land_transport_van_fuel_cell_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed van fuel-cell transport share.",
+          "type": "object"
+        },
+        "land_transport_van_electric_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed van electric transport share.",
+          "type": "object"
+        },
+        "land_transport_van_ice_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed van ICE transport share.",
+          "type": "object"
+        },
+        "land_transport_bus_fuel_cell_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed bus fuel-cell transport share.",
+          "type": "object"
+        },
+        "land_transport_bus_electric_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed bus electric transport share.",
+          "type": "object"
+        },
+        "land_transport_bus_ice_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed bus ICE transport share.",
+          "type": "object"
+        },
+        "transport_passenger_electric_efficiency": {
+          "default": 53.19,
+          "description": "Passenger electric transport efficiency in 100 km per MWh.",
+          "type": "number"
+        },
+        "transport_passenger_fuel_cell_efficiency": {
+          "default": 30.003,
+          "description": "Passenger fuel-cell transport efficiency in 100 km per MWh_H2.",
+          "type": "number"
+        },
+        "transport_passenger_ice_efficiency": {
+          "default": 16.0712,
+          "description": "Passenger ICE transport efficiency in 100 km per MWh_fuel.",
+          "type": "number"
+        },
+        "transport_truck_electric_efficiency": {
+          "default": 25.0,
+          "description": "Truck electric transport efficiency in 100 km per MWh.",
+          "type": "number"
+        },
+        "transport_truck_fuel_cell_efficiency": {
+          "default": 3.565,
+          "description": "Truck fuel-cell transport efficiency in 100 km per MWh_H2.",
+          "type": "number"
+        },
+        "transport_truck_ice_efficiency": {
+          "default": 3.75,
+          "description": "Truck ICE transport efficiency in 100 km per MWh_fuel.",
+          "type": "number"
+        },
+        "transport_van_electric_efficiency": {
+          "default": 40.0,
+          "description": "Van electric transport efficiency in 100 km per MWh.",
+          "type": "number"
+        },
+        "transport_van_fuel_cell_efficiency": {
+          "default": 30.003,
+          "description": "Van fuel-cell transport efficiency in 100 km per MWh_H2.",
+          "type": "number"
+        },
+        "transport_van_ice_efficiency": {
+          "default": 15.6,
+          "description": "Van ICE transport efficiency in 100 km per MWh_fuel.",
+          "type": "number"
+        },
+        "transport_bus_electric_efficiency": {
+          "default": 25.0,
+          "description": "Bus electric transport efficiency in 100 km per MWh.",
+          "type": "number"
+        },
+        "transport_bus_fuel_cell_efficiency": {
+          "default": 3.565,
+          "description": "Bus fuel-cell transport efficiency in 100 km per MWh_H2.",
+          "type": "number"
+        },
+        "transport_bus_ice_efficiency": {
+          "default": 3.75,
+          "description": "Bus ICE transport efficiency in 100 km per MWh_fuel.",
+          "type": "number"
+        },
         "battery_p_nom_min_enable": {
           "default": false,
           "description": "Enable sector-specific minimum battery power capacity constraints.",
@@ -12229,6 +12402,179 @@
           },
           "description": "Year-indexed scaling factors for land transport bus-km demand.",
           "type": "object"
+        },
+        "land_transport_fuel_shares_enable": {
+          "default": false,
+          "description": "Enable loading per-country, per-segment land transport fuel shares from CSV.",
+          "type": "boolean"
+        },
+        "land_transport_fuel_shares_file": {
+          "default": "data/land_transport_fuel_shares.csv",
+          "description": "CSV file path with per-country, per-segment land transport fuel shares.",
+          "type": "string"
+        },
+        "pkw_bev_avail_max": {
+          "default": 0.95,
+          "description": "Maximum plugged-in availability for passenger BEVs.",
+          "type": "number"
+        },
+        "pkw_bev_avail_mean": {
+          "default": 0.8,
+          "description": "Mean plugged-in availability for passenger BEVs.",
+          "type": "number"
+        },
+        "bus_bev_avail_max": {
+          "default": 0.9,
+          "description": "Maximum plugged-in availability for bus BEVs.",
+          "type": "number"
+        },
+        "bus_bev_avail_mean": {
+          "default": 0.6,
+          "description": "Mean plugged-in availability for bus BEVs.",
+          "type": "number"
+        },
+        "hd_bev_avail_max": {
+          "default": 0.85,
+          "description": "Maximum plugged-in availability for heavy-duty BEVs.",
+          "type": "number"
+        },
+        "hd_bev_avail_mean": {
+          "default": 0.7,
+          "description": "Mean plugged-in availability for heavy-duty BEVs.",
+          "type": "number"
+        },
+        "lfw_bev_avail_max": {
+          "default": 0.92,
+          "description": "Maximum plugged-in availability for light commercial BEVs.",
+          "type": "number"
+        },
+        "lfw_bev_avail_mean": {
+          "default": 0.7,
+          "description": "Mean plugged-in availability for light commercial BEVs.",
+          "type": "number"
+        },
+        "land_transport_truck_fuel_cell_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed truck fuel-cell transport share.",
+          "type": "object"
+        },
+        "land_transport_truck_electric_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed truck electric transport share.",
+          "type": "object"
+        },
+        "land_transport_truck_ice_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed truck ICE transport share.",
+          "type": "object"
+        },
+        "land_transport_van_fuel_cell_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed van fuel-cell transport share.",
+          "type": "object"
+        },
+        "land_transport_van_electric_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed van electric transport share.",
+          "type": "object"
+        },
+        "land_transport_van_ice_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed van ICE transport share.",
+          "type": "object"
+        },
+        "land_transport_bus_fuel_cell_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed bus fuel-cell transport share.",
+          "type": "object"
+        },
+        "land_transport_bus_electric_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed bus electric transport share.",
+          "type": "object"
+        },
+        "land_transport_bus_ice_share": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Year-indexed bus ICE transport share.",
+          "type": "object"
+        },
+        "transport_passenger_electric_efficiency": {
+          "default": 53.19,
+          "description": "Passenger electric transport efficiency in 100 km per MWh.",
+          "type": "number"
+        },
+        "transport_passenger_fuel_cell_efficiency": {
+          "default": 30.003,
+          "description": "Passenger fuel-cell transport efficiency in 100 km per MWh_H2.",
+          "type": "number"
+        },
+        "transport_passenger_ice_efficiency": {
+          "default": 16.0712,
+          "description": "Passenger ICE transport efficiency in 100 km per MWh_fuel.",
+          "type": "number"
+        },
+        "transport_truck_electric_efficiency": {
+          "default": 25.0,
+          "description": "Truck electric transport efficiency in 100 km per MWh.",
+          "type": "number"
+        },
+        "transport_truck_fuel_cell_efficiency": {
+          "default": 3.565,
+          "description": "Truck fuel-cell transport efficiency in 100 km per MWh_H2.",
+          "type": "number"
+        },
+        "transport_truck_ice_efficiency": {
+          "default": 3.75,
+          "description": "Truck ICE transport efficiency in 100 km per MWh_fuel.",
+          "type": "number"
+        },
+        "transport_van_electric_efficiency": {
+          "default": 40.0,
+          "description": "Van electric transport efficiency in 100 km per MWh.",
+          "type": "number"
+        },
+        "transport_van_fuel_cell_efficiency": {
+          "default": 30.003,
+          "description": "Van fuel-cell transport efficiency in 100 km per MWh_H2.",
+          "type": "number"
+        },
+        "transport_van_ice_efficiency": {
+          "default": 15.6,
+          "description": "Van ICE transport efficiency in 100 km per MWh_fuel.",
+          "type": "number"
+        },
+        "transport_bus_electric_efficiency": {
+          "default": 25.0,
+          "description": "Bus electric transport efficiency in 100 km per MWh.",
+          "type": "number"
+        },
+        "transport_bus_fuel_cell_efficiency": {
+          "default": 3.565,
+          "description": "Bus fuel-cell transport efficiency in 100 km per MWh_H2.",
+          "type": "number"
+        },
+        "transport_bus_ice_efficiency": {
+          "default": 3.75,
+          "description": "Bus ICE transport efficiency in 100 km per MWh_fuel.",
+          "type": "number"
         },
         "battery_p_nom_min_enable": {
           "default": false,
