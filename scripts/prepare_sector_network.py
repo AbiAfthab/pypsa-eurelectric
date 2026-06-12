@@ -2367,7 +2367,7 @@ def add_EVs(
         bus1=spatial.nodes + f" EV battery {mode}",
         p_nom=p_nom,
         carrier=f"BEV charger {mode}",
-        p_max_pu=avail_profile.loc[n.snapshots, spatial.nodes],
+        p_max_pu=charger_p_max_pu,
         lifetime=1,
         efficiency=options["bev_charge_efficiency"],
     )
