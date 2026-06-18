@@ -152,7 +152,6 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
         "Load",
         name=data_center_demand_buses,
         bus=data_center_demand_buses,
-        # p_nom=load_nom.values,
         p_set=load.values,
         carrier="electricity",
     )
