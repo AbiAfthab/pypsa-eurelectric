@@ -2347,7 +2347,17 @@ def add_EVs(
         p_set=profile.loc[n.snapshots],
     )
 
-    # Add BEV chargers
+    if not options["bev_dsm"]:
+        # Without DSM, pass through the load profile of the EVs directly to the grid
+        # This means that the chargers are always available to meet any load
+        # but load is not shifted in time
+        charger_p_max_pu = 1.0
+    elif options["bev_dsm"]:
+        # With DSM, the chargers can only meet the load when EVs are available for charging/discharging
+        # according to the availability profile, which allows for shifting load in time
+        charger_p_max_pu = avail_profile.loc[n.snapshots, spatial.nodes]
+
+
     p_nom = number_cars * options["bev_charge_rate"] * electric_share
     n.add(
         "Link",
@@ -2357,7 +2367,7 @@ def add_EVs(
         bus1=spatial.nodes + f" EV battery {mode}",
         p_nom=p_nom,
         carrier=f"BEV charger {mode}",
-        p_max_pu=avail_profile.loc[n.snapshots, spatial.nodes],
+        p_max_pu=charger_p_max_pu,
         lifetime=1,
         efficiency=options["bev_charge_efficiency"],
     )
