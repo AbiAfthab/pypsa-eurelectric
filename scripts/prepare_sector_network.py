@@ -1558,6 +1558,7 @@ def insert_electricity_distribution_grid(
         nodes + " low voltage",
         location=nodes,
         carrier="low voltage",
+        country=n.buses.loc[nodes, "country"].values,
         unit="MWh_el",
     )
 
@@ -2602,6 +2603,280 @@ def add_ice_cars(
         efficiency2=costs.at["oil", "CO2 intensity"],
         p_nom_extendable=True,
     )
+
+def load_battery_p_nom_min_table(
+    path: str,
+    investment_year: int,
+) -> pd.Series:
+    """
+    Load per-country battery capacity floors for one planning year.
+
+    Expects the same CSV layout as ``data/agg_p_nom_minmax.csv``:
+    two header rows (year × min/max) and index columns (country, carrier).
+
+    Parameters
+    ----------
+    path : str
+        Path to ``data/battery_p_nom_min.csv``.
+    investment_year : int
+        Planning horizon year (e.g. 2030).
+
+    Returns
+    -------
+    pd.Series
+        Index (country, carrier); values minimum ``p_nom`` in MW.
+        NaN where the CSV has no value for that row/year.
+    """
+    df = pd.read_csv(path, index_col=[0, 1], header=[0, 1])
+    if df.index.names != ["country", "carrier"]:
+        df.index.names = ["country", "carrier"]
+    year_levels = df.columns.get_level_values(0)
+    candidates = [str(investment_year), investment_year]
+    year_key = next((k for k in candidates if k in year_levels), None)
+    if year_key is None:
+        available = sorted({str(y) for y in year_levels.unique()})
+        raise KeyError(
+            f"Planning year {investment_year!r} not in battery p_nom_min file; "
+            f"available years: {available}"
+        )
+    block = df[year_key]
+
+    if "min" not in block.columns:
+        raise ValueError(
+            f"After selecting year {year_key!r}, expected column 'min'; "
+            f"got {list(block.columns)}"
+        )
+
+    mins = block["min"]
+    mins = pd.to_numeric(mins, errors="coerce")
+    allowed = {"battery", "home battery"}
+    unknown = mins.index.get_level_values("carrier").difference(allowed)
+    if len(unknown):
+        raise ValueError(f"Unknown carriers in {path}: {sorted(unknown)}")
+    if (mins.dropna() < 0).any():
+        bad = mins[mins < 0]
+        raise ValueError(f"Negative battery p_nom_min values for {year_key}:\n{bad}")
+    mins.name = "p_nom_min_mw"
+    return mins
+
+def _node_from_storage_unit(su_index: str) -> str:
+    return su_index[: -len(" battery")]
+
+
+def _distribute_country_min_by_pop(
+    nodes: pd.Index,
+    pop_layout: pd.DataFrame,
+    remaining_min: float,
+) -> pd.Series:
+    """Split remaining_min [MW] across nodes; weights sum to 1."""
+    if len(nodes) == 0:
+        return pd.Series(dtype=float)
+    weights = pop_layout.loc[pop_layout.index.intersection(nodes), "fraction"]
+    if weights.empty or weights.sum() == 0:
+        weights = pd.Series(1.0 / len(nodes), index=nodes)
+    else:
+        missing = nodes.difference(weights.index)
+        if len(missing):
+            weights = weights.reindex(nodes, fill_value=0.0)
+            weights.loc[missing] = 1.0 / len(nodes)
+        weights = weights / weights.sum()
+    return remaining_min * weights
+
+def apply_battery_p_nom_min(
+    n: pypsa.Network,
+    limits: pd.Series,
+    pop_layout: pd.DataFrame,
+    include_existing: bool = True,
+    carriers: list[str] | None = None,
+) -> None:
+    """
+    Apply per-country battery capacity floors from TYNDP-derived limits.
+    Distributes country totals (MW) across extendable components using
+    population weights from ``pop_layout``. Utility floors apply to grid
+    ``StorageUnit`` (carrier ``battery``); home floors apply to charger and
+    discharger ``Link`` components (carrier ``home battery`` in CSV).
+    Parameters
+    ----------
+    n : pypsa.Network
+        Sector network after relevant components are added.
+    limits : pd.Series
+        Index (country, carrier); values minimum power in MW (from
+        ``load_battery_p_nom_min_table``). NaN entries are skipped.
+    pop_layout : pd.DataFrame
+        Cluster population layout (index = node names, column ``fraction``).
+    include_existing : bool
+        If True, subtract non-extendable ``p_nom`` in each country before
+        distributing the floor to extendable assets.
+    carriers : list[str] or None
+        Subset of ``{"battery", "home battery"}`` to apply. None applies both.
+    """
+    if limits.empty or limits.dropna().empty:
+        logger.info("Battery p_nom_min: no limits to apply")
+        return
+    if carriers is None:
+        carriers = ["battery", "home battery"]
+    else:
+        carriers = list(carriers)
+    logger.info(
+        "Applying battery p_nom_min for carriers %s (%d country×carrier entries)",
+        carriers,
+        limits.dropna().size,
+    )
+    for (country, carrier), country_min_mw in limits.dropna().items():
+        if carrier not in carriers:
+            continue
+        country_min_mw = float(country_min_mw)
+        if country_min_mw <= 0:
+            continue
+        if carrier == "battery":
+            ext = n.storage_units.query(
+                'carrier == "battery" and p_nom_extendable'
+            )
+            if ext.empty:
+                logger.warning(
+                    "Battery p_nom_min: %s has %.3f GW policy but no extendable "
+                    "grid battery StorageUnits",
+                    country,
+                    country_min_mw / 1e3,
+                )
+                continue
+            bus_country = n.buses.loc[ext.bus, "country"]
+            ext = ext[bus_country.values == country]
+            if ext.empty:
+                logger.warning(
+                    "Battery p_nom_min: %s has %.3f GW policy but no extendable "
+                    "grid batteries in this country",
+                    country,
+                    country_min_mw / 1e3,
+                )
+                continue
+            fixed_mw = 0.0
+            if include_existing:
+                fixed = n.storage_units.query(
+                    'carrier == "battery" and not p_nom_extendable'
+                )
+                if not fixed.empty:
+                    bc = n.buses.loc[fixed.bus, "country"]
+                    fixed_mw = fixed.loc[bc.values == country, "p_nom"].sum()
+            remaining_min = max(country_min_mw - fixed_mw, 0.0)
+            if remaining_min <= 0:
+                logger.debug(
+                    "Battery p_nom_min %s utility: existing %.3f GW >= policy %.3f GW",
+                    country,
+                    fixed_mw / 1e3,
+                    country_min_mw / 1e3,
+                )
+                continue
+            buses = pd.Index(ext.bus.unique())
+            p_min_by_node = _distribute_country_min_by_pop(
+                buses, pop_layout, remaining_min
+            )
+            for idx in ext.index:
+                pmin = float(p_min_by_node[ext.at[idx, "bus"]])
+                n.storage_units.at[idx, "p_nom_min"] = max(
+                    n.storage_units.at[idx, "p_nom_min"], pmin
+                )
+            assigned_mw = n.storage_units.loc[ext.index, "p_nom_min"].sum()
+            logger.info(
+                "Battery p_nom_min %s utility: policy=%.3f GW, existing=%.3f GW, "
+                "remaining=%.3f GW, assigned=%.3f GW (%d nodes)",
+                country,
+                country_min_mw / 1e3,
+                fixed_mw / 1e3,
+                remaining_min / 1e3,
+                assigned_mw / 1e3,
+                len(buses),
+            )
+        elif carrier == "home battery":
+            ext = n.links.query(
+                'carrier == "home battery charger" and p_nom_extendable'
+            )
+            if ext.empty:
+                logger.warning(
+                    "Battery p_nom_min: %s has %.3f GW home policy but no "
+                    "extendable home battery charger Links",
+                    country,
+                    country_min_mw / 1e3,
+                )
+                continue
+            # bus0 is low voltage; map to AC cluster for country and pop_layout
+            link_country = n.buses.loc[
+                ext.bus0.str.removesuffix(" low voltage"), "country"
+            ]
+            ext = ext[link_country.values == country]
+            if ext.empty:
+                logger.warning(
+                    "Battery p_nom_min: %s has %.3f GW home policy but no extendable "
+                    "home battery in this country",
+                    country,
+                    country_min_mw / 1e3,
+                )
+                continue
+            ac_nodes = ext.bus0.str.removesuffix(" low voltage")
+
+            fixed_mw = 0.0
+            if include_existing:
+                fixed = n.links.query(
+                    'carrier == "home battery charger" and not p_nom_extendable'
+                )
+                if not fixed.empty:
+                    fixed_country = n.buses.loc[fixed.bus0, "country"]
+                    fixed_mw = fixed.loc[fixed_country.values == country, "p_nom"].sum()
+            remaining_min = max(country_min_mw - fixed_mw, 0.0)
+            if remaining_min <= 0:
+                logger.debug(
+                    "Battery p_nom_min %s home: existing %.3f GW >= policy %.3f GW",
+                    country,
+                    fixed_mw / 1e3,
+                    country_min_mw / 1e3,
+                )
+                continue
+            p_min_by_node = _distribute_country_min_by_pop(
+                pd.Index(ac_nodes.unique()), pop_layout, remaining_min
+            )
+            for link_idx in ext.index:
+                ac_node = ext.at[link_idx, "bus0"].removesuffix(" low voltage")
+                pmin = float(p_min_by_node[ac_node])
+                n.links.at[link_idx, "p_nom_min"] = max(
+                    n.links.at[link_idx, "p_nom_min"], pmin
+                )
+                dis_idx = link_idx.replace("charger", "discharger")
+                if dis_idx in n.links.index:
+                    n.links.at[dis_idx, "p_nom_min"] = max(
+                        n.links.at[dis_idx, "p_nom_min"], pmin
+                    )
+            assigned_mw = n.links.loc[ext.index, "p_nom_min"].sum()
+            logger.info(
+                "Battery p_nom_min %s home: policy=%.3f GW, existing=%.3f GW, "
+                "remaining=%.3f GW, assigned=%.3f GW (%d nodes)",
+                country,
+                country_min_mw / 1e3,
+                fixed_mw / 1e3,
+                remaining_min / 1e3,
+                assigned_mw / 1e3,
+                len(ext),
+            )
+        else:
+            raise ValueError(f"Unsupported battery carrier {carrier!r}")
+    if "battery" in carriers:
+        bat = n.storage_units.query('carrier == "battery"')
+        tot = (
+            bat.assign(country=n.buses.loc[bat.bus, "country"].values)
+            .groupby("country")["p_nom_min"]
+            .sum()
+            / 1e3
+        )
+        logger.info("Grid battery p_nom_min totals [GW]:\n%s", tot.round(2).to_string())
+    if "home battery" in carriers:
+        ch = n.links.query('carrier == "home battery charger"')
+        tot = (
+            ch.assign(country=n.buses.loc[ch.bus0, "country"].values)
+            .groupby("country")["p_nom_min"]
+            .sum()
+            / 1e3
+        )
+        logger.info("Home battery p_nom_min totals [GW]:\n%s", tot.round(2).to_string())
+
 
 def load_land_transport_fuel_shares_table(
     path: str, investment_year: int
@@ -7266,6 +7541,21 @@ if __name__ == "__main__":
         max_hours=max_hours,
     )
 
+    _battery_limits = None
+    if options.get("battery_p_nom_min_enable") and os.path.isfile(
+        options["battery_p_nom_min_file"]
+    ):
+        _battery_limits = load_battery_p_nom_min_table(
+            options["battery_p_nom_min_file"], investment_year
+        )
+        apply_battery_p_nom_min(
+            n,
+            _battery_limits,
+            pop_layout,
+            include_existing=options.get("battery_p_nom_min_include_existing", True),
+            carriers=["battery"],
+        )
+
     attach_stores(
         n=n,
         costs=costs,
@@ -7463,6 +7753,19 @@ if __name__ == "__main__":
     if options["electricity_distribution_grid"]:
         insert_electricity_distribution_grid(
             n, costs, options, pop_layout, snakemake.input.solar_rooftop_potentials
+        )
+
+    if (
+        _battery_limits is not None
+        and options.get("battery_p_nom_min_enable")
+        and options["electricity_distribution_grid"]
+    ):
+        apply_battery_p_nom_min(
+            n,
+            _battery_limits,
+            pop_layout,
+            include_existing=options.get("battery_p_nom_min_include_existing", True),
+            carriers=["home battery"],
         )
 
     if options["enhanced_geothermal"].get("enable", False):

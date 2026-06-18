@@ -48,6 +48,8 @@ def get_load_profile(
         .set_index("utc_timestamp")
     )
 
+    df_profile_year_grouped = df_profile_year_grouped.replace(0, None).ffill()
+
     return df_profile_year_grouped
 
 
@@ -78,6 +80,7 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
     nodal_distribution = pd.read_csv(load_nodal_distribution_fn, index_col=["name"])
 
     load_nom = nodal_distribution / utilization_hours
+
     load = pd.DataFrame(
         np.outer(load_profile.values, load_nom.values),
         index=load_profile.index,
@@ -114,9 +117,10 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
         suffix=" site link",
         bus0=buses,
         bus1=data_center_sites,
-        p_nom=1e8,
+        p_nom=load_nom.values.flatten(),
         p_min_pu=-1 * dc_to_grid,
         p_max_pu=1 * grid_to_dc,
+        carrier="electricity distribution grid",
     )
 
     # add second bus to constrain the demand (including any feedback from DSR) to be positive
@@ -140,27 +144,57 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
         bus1=data_center_demand_buses,
         p_min_pu=0,
         p_max_pu=1,
-        p_nom=np.inf,
+        p_nom=load_nom.values.flatten(),
+        carrier="electricity distribution grid",
     )
 
     n.add(
         "Load",
         name=data_center_demand_buses,
         bus=data_center_demand_buses,
-        # p_nom=load_nom.values,
         p_set=load.values,
+        carrier="electricity",
     )
 
     if dsr["enable"]:
         n.add(
-            "Store",
+            "Bus",
             name=data_center_demand_buses,
             suffix=" (DSR)",
-            bus=data_center_demand_buses,
+            carrier="low voltage",
+            unit="MWh_el",
+        )
+
+        dsr_buses = n.buses[n.buses.index.str.contains("(DSR)")].index
+
+        n.add(
+            "Link",
+            name=dsr_buses,
+            suffix=" demand link",
+            bus0=data_center_demand_buses,
+            bus1=dsr_buses,
+            p_min_pu=-1,
+            p_max_pu=1,
+            p_nom=load_nom.values.flatten() * dsr["p_pct_nom"],
+            committable=True,
+            start_up_cost=0.1,
+            shut_down_cost=0.1,
+            ramp_limit_start_up=0.5,
+            ramp_limit_shut_down=0.5,
+            carrier="low voltage",
+        )
+
+        n.add(
+            "Store",
+            name=dsr_buses,
+            bus=dsr_buses,
             e_cyclic=True,
             e_nom=load_nom.values.flatten() * dsr["p_pct_nom"] * dsr["shift_hours"],
             capital_cost=dsr["capital_cost"],
             marginal_cost=dsr["marginal_cost"],
+            carrier="battery",
+            e_min_pu=0,
+            e_max_pu=1,
         )
 
     # add onsite storage
@@ -179,6 +213,8 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
             marginal_cost=ref_stores["marginal_cost"],
             capital_cost=ref_stores["capital_cost"],
             carrier=storage["reference_technology"],
+            e_min_pu=0,
+            e_max_pu=1,
         )
 
     # add onsite generation

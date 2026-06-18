@@ -13,8 +13,8 @@
 # RUN SETTINGS
 # =============================================================================
 run:
-  prefix: "2026-05-16"
-  name: "myopic_ccl_loadshedding"
+  prefix: "2026-05-24"
+  name: "Myopic-2030-2040"
   disable_progressbar: true
   shared_cutouts: true
 
@@ -22,21 +22,30 @@ foresight: myopic
 
 scenario:
   clusters:
-    - 37
+  - 37
   opts:
-    - ""
+  - ""
   sector_opts:
-    - ""
+  - ""
   planning_horizons:
-    - 2030
-    - 2040
+  - 2030
+  - 2040
 
 costs:
   year: 2030
+  # ETS-like CO2 prices (EUR/t); applied in prepare_sector_network per horizon
+  emission_prices:
+    enable: true
+    co2:
+      2030: 100
+      2040: 171
 
 co2_budget:
   2030: 0.45
-  2040: 0.1
+  # 2040: 0.15 corresponds to 85% reduction vs 1990 (relaxed from previous
+  # 90% reduction). Combined with no new OCGT/CCGT Generators below, this is
+  # the climate-cap setting used by the 10countries batmin scenarios.
+  2040: 0.15
 # =============================================================================
 # ATLITE / CUTOUTS
 # =============================================================================
@@ -86,6 +95,9 @@ countries:
 
 electricity:
   renewable_carriers: [solar, solar-hsat, onwind, offwind-ac, offwind-dc, offwind-float, hydro]
+  # No new OCGT/CCGT as Generators — fossil gas can only come from brownfield
+  # capacity in `conventional_carriers`. NOTE: gas can still appear via the
+  # sector backdoor (`sector.chp.fuel: [gas]` and `sector.conventional_generation`).
   extendable_carriers:
     Generator:
       [
@@ -95,13 +107,13 @@ electricity:
         offwind-ac,
         offwind-dc,
         offwind-float,
-        OCGT,
-        CCGT,
       ]
     StorageUnit: [battery]
     Store: [H2]
     Link: []
-  transmission_limit: "v1.25"
+  # v1.5 = +50% AC+DC line volume vs today's grid. Eases the binding lv_limit
+  # shadow seen in the 10countries 2040 batmin runs.
+  transmission_limit: "v1.5"
 
 # =============================================================================
 # RENEWABLE — per-country offshore potential overrides (BE / DE)
@@ -127,23 +139,26 @@ renewable:
   # default (`correction_factor: 0.8855`).
   "offwind-ac":
     country_potential_overrides:
-      BE: { capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0 }
-      DE: { capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0 }
+      BE: {capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0}
+      DE: {capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0}
   "offwind-dc":
     country_potential_overrides:
-      BE: { capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0 }
-      DE: { capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0 }
+      BE: {capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0}
+      DE: {capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0}
   "offwind-float":
     country_potential_overrides:
-      BE: { capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0 }
-      DE: { capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0 }
+      BE: {capacity_per_sqkm_scale: 4.5, correction_factor_scale: 1.0}
+      DE: {capacity_per_sqkm_scale: 2.5, correction_factor_scale: 1.0}
 
 # =============================================================================
 # CLUSTERING
 # =============================================================================
 clustering:
   temporal:
-    resolution_sector: 3h
+    # 2920SEG = ~3h equivalent via adaptive segmentation (captures peaks better
+    # than fixed 3h sampling at the same number of timesteps). Switch back to
+    # "3h" or "1460SEG" (6h) only if memory/time is an issue.
+    resolution_sector: "2920SEG"
 
 # =============================================================================
 # DATASETS (override defaults from config.default.yaml)
@@ -160,6 +175,10 @@ data:
 # SECTOR COUPLING SETTINGS
 # =============================================================================
 sector:
+  #enforcing min battery capacity. data from TYNDP_2026
+  battery_p_nom_min_enable: true
+  battery_p_nom_min_file: data/battery_p_nom_min.csv
+  battery_p_nom_min_include_existing: true   # recommended: subtract fixed capacity
   # Disabled features for eurelectric runs
   gas_network: true
   H2_network: false
@@ -176,8 +195,8 @@ sector:
     dsm:
       enable: true
       direction:
-        - overheat
-        - undercool
+      - overheat
+      - undercool
       restriction_value:
         2030: 0.25
         2040: 0.37
@@ -185,22 +204,18 @@ sector:
     2020: 1.01
     2030: 1.03
     2040: 1.06
-    2050: 1.09
   land_transport_truck_km_scaling:
     2020: 1.01
     2030: 1.03
     2040: 1.06
-    2050: 1.09
   land_transport_van_km_scaling:
     2020: 1.01
     2030: 1.03
     2040: 1.06
-    2050: 1.09
   land_transport_bus_km_scaling:
     2020: 1.01
     2030: 1.03
     2040: 1.06
-    2050: 1.09
 
   # Per-country, per-segment fuel shares (electric / fuel_cell / ice). Same CSV layout
   # as data/agg_p_nom_minmax.csv: two header rows (year × fuel), index columns country, segment.
@@ -250,7 +265,7 @@ sector:
     2035: 100
     2040: 240
     2045: 250
-    2050: 250  
+    2050: 250
 
     # Truck fuel shares
   land_transport_truck_fuel_cell_share:
@@ -260,7 +275,6 @@ sector:
     2035: 0.10
     2040: 0.20
     2045: 0.30
-    2050: 0.40
   land_transport_truck_electric_share:
     2020: 0
     2025: 0
@@ -268,7 +282,6 @@ sector:
     2035: 0.15
     2040: 0.30
     2045: 0.45
-    2050: 0.60
   land_transport_truck_ice_share:
     2020: 1
     2025: 1
@@ -276,7 +289,7 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
-    2050: 0.00 
+    2050: 0.00
     # Van fuel shares
   land_transport_van_fuel_cell_share:
     2020: 0
@@ -285,7 +298,6 @@ sector:
     2035: 0.10
     2040: 0.20
     2045: 0.30
-    2050: 0.40
   land_transport_van_electric_share:
     2020: 0
     2025: 0
@@ -293,7 +305,6 @@ sector:
     2035: 0.15
     2040: 0.30
     2045: 0.45
-    2050: 0.60
   land_transport_van_ice_share:
     2020: 1
     2025: 1
@@ -301,7 +312,7 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
-    2050: 0.00 
+    2050: 0.00
     # Bus fuel shares
   land_transport_bus_fuel_cell_share:
     2020: 0
@@ -310,7 +321,6 @@ sector:
     2035: 0.10
     2040: 0.20
     2045: 0.30
-    2050: 0.40
   land_transport_bus_electric_share:
     2020: 0
     2025: 0
@@ -318,7 +328,6 @@ sector:
     2035: 0.15
     2040: 0.30
     2045: 0.45
-    2050: 0.60
   land_transport_bus_ice_share:
     2020: 1
     2025: 1
@@ -326,7 +335,7 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
-    2050: 0.00 
+    2050: 0.00
 
 # For Electric Efficiency: https://ev-database.org/de/cheatsheet/energy-consumption-electric-car
   # Light : average energy consumption 188 Wh/km = 0.188 kWh/km = 18.8 kWh/100 km = 0.0188 MWh/ 100 km
@@ -335,7 +344,6 @@ sector:
   # Vans: https://www.preprints.org/manuscript/202511.1882/v1/download
     # assume 25 kWh/100 km = 0.025 MWh/100 km
   # Heavy: assume 40 kWh/100 km = 0.04 MWh/100 km
-    
 
 # For Fuel Cell efficiency:  https://h2-mobility.de/wp-content/uploads/2021/02/H2M_Flottenpapier_English_20180822.pdf
     # Light: assume in average 1kg_H2 per 100 km -> 1kg_H2 = 33 kWh_H2 (LHV)
@@ -360,7 +368,7 @@ sector:
   transport_truck_electric_efficiency: 25
   transport_truck_fuel_cell_efficiency: 3.565
   transport_truck_ice_efficiency: 3.75
-  
+
   transport_van_electric_efficiency: 40
   transport_van_fuel_cell_efficiency: 30.003
   transport_van_ice_efficiency: 15.6
@@ -523,16 +531,56 @@ transmission_projects:
     manual: true
 
 # =============================================================================
+# DATA CENTERS
+# =============================================================================
+data_center:
+  # DC DSR: ON by default in eurelectric runs (previously false in upstream
+  # default — the silent default caused 176 TWh of DC load to be modelled as
+  # inflexible in earlier runs). Override to false for "noflex" sensitivities.
+  dsr:
+    enable: true
+    capital_cost: 0.1
+    marginal_cost: 2.
+    p_pct_nom: 0.05
+    shift_hours: 12
+  load:
+    profile: High Voltage Import
+    profile_year: 2024
+  "on-site generation":
+    enable: false
+    p_pct_nom: 0.2
+    reference_technology: OCGT
+  "on-site storage":
+    enable: false
+    p_pct_nom: 0.2
+    shift_hours: 6
+    reference_technology: battery
+  grid_connection: "Grid to data center"
+
+# =============================================================================
 # SOLVING SETTINGS
 # =============================================================================
 solving:
   options:
-    assign_all_duals: false
+    # Collect shadow prices (duals) for every constraint — needed for CCL,
+    # lv_limit, CO2, sequestration shadow analysis.
+    assign_all_duals: true
+    # Load-shedding fall-back at 10 000 EUR/MWh so peak-hour scarcity is priced
+    # explicitly instead of returning infeasible (especially relevant when new
+    # OCGT/CCGT Generators are disabled).
+    load_shedding:
+      enable: true
+      default_cost: 10000
+      all_carriers: true
+      carriers: {}
   agg_p_nom_limits:
     agg_offwind: true
     agg_solar: true
     include_existing: true
-    file: data/agg_p_nom_valideted_cap.csv
+    # NOMAX = validated `min` floors only; `max` columns blanked so the model
+    # is free to overbuild any RES carrier where economic. Switch back to
+    # `data/agg_p_nom_valideted_cap.csv` for runs with capped maxes.
+    file: data/agg_p_nom_TEST_NOMAX.csv
   constraints:
     CCL: true
     EQ: false

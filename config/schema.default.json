@@ -3514,6 +3514,33 @@
               ],
               "default": 20,
               "description": "Fixed length of the cable connection that is onshorelandfall in km. If 'centroid', the length is calculated as the distance to centroid of the onshore bus."
+            },
+            "country_potential_overrides": {
+              "anyOf": [
+                {
+                  "additionalProperties": {
+                    "description": "Per-country multiplicative scaling of `capacity_per_sqkm` and `correction_factor` for renewable potentials.\n\nSee `OFFSHORE_BE_DE_OPTION_B.md` for the motivation and equivalence proof.\nOnly meaningful when `resource_classes == 1`.",
+                    "properties": {
+                      "capacity_per_sqkm_scale": {
+                        "default": 1.0,
+                        "description": "Multiplicative scale applied to per-bus `p_nom_max` for buses in this country.",
+                        "type": "number"
+                      },
+                      "correction_factor_scale": {
+                        "default": 1.0,
+                        "description": "Multiplicative scale applied to per-bus `p_max_pu` (capacity-factor time series) for buses in this country.",
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Optional ISO2-keyed multiplicative scaling of `p_nom_max` and `p_max_pu` applied at network-attach time. Equivalent to changing `capacity_per_sqkm` and `correction_factor` in the GIS step when `resource_classes == 1`. Used to align BE/DE offshore potentials with validated CCL minimums; see `OFFSHORE_BE_DE_OPTION_B.md`."
             }
           }
         },
@@ -3697,6 +3724,33 @@
               ],
               "default": 20,
               "description": "Fixed length of the cable connection that is onshorelandfall in km. If 'centroid', the length is calculated as the distance to centroid of the onshore bus."
+            },
+            "country_potential_overrides": {
+              "anyOf": [
+                {
+                  "additionalProperties": {
+                    "description": "Per-country multiplicative scaling of `capacity_per_sqkm` and `correction_factor` for renewable potentials.\n\nSee `OFFSHORE_BE_DE_OPTION_B.md` for the motivation and equivalence proof.\nOnly meaningful when `resource_classes == 1`.",
+                    "properties": {
+                      "capacity_per_sqkm_scale": {
+                        "default": 1.0,
+                        "description": "Multiplicative scale applied to per-bus `p_nom_max` for buses in this country.",
+                        "type": "number"
+                      },
+                      "correction_factor_scale": {
+                        "default": 1.0,
+                        "description": "Multiplicative scale applied to per-bus `p_max_pu` (capacity-factor time series) for buses in this country.",
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Optional ISO2-keyed multiplicative scaling of `p_nom_max` and `p_max_pu` applied at network-attach time. Equivalent to changing `capacity_per_sqkm` and `correction_factor` in the GIS step when `resource_classes == 1`. Used to align BE/DE offshore potentials with validated CCL minimums; see `OFFSHORE_BE_DE_OPTION_B.md`."
             }
           }
         },
@@ -3880,6 +3934,33 @@
               ],
               "default": 20,
               "description": "Fixed length of the cable connection that is onshorelandfall in km. If 'centroid', the length is calculated as the distance to centroid of the onshore bus."
+            },
+            "country_potential_overrides": {
+              "anyOf": [
+                {
+                  "additionalProperties": {
+                    "description": "Per-country multiplicative scaling of `capacity_per_sqkm` and `correction_factor` for renewable potentials.\n\nSee `OFFSHORE_BE_DE_OPTION_B.md` for the motivation and equivalence proof.\nOnly meaningful when `resource_classes == 1`.",
+                    "properties": {
+                      "capacity_per_sqkm_scale": {
+                        "default": 1.0,
+                        "description": "Multiplicative scale applied to per-bus `p_nom_max` for buses in this country.",
+                        "type": "number"
+                      },
+                      "correction_factor_scale": {
+                        "default": 1.0,
+                        "description": "Multiplicative scale applied to per-bus `p_max_pu` (capacity-factor time series) for buses in this country.",
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Optional ISO2-keyed multiplicative scaling of `p_nom_max` and `p_max_pu` applied at network-attach time. Equivalent to changing `capacity_per_sqkm` and `correction_factor` in the GIS step when `resource_classes == 1`. Used to align BE/DE offshore potentials with validated CCL minimums; see `OFFSHORE_BE_DE_OPTION_B.md`."
             }
           }
         },
@@ -6257,6 +6338,21 @@
         "grid_codes"
       ]
     },
+    "_CountryPotentialOverride": {
+      "description": "Per-country multiplicative scaling of `capacity_per_sqkm` and `correction_factor` for renewable potentials.\n\nSee `OFFSHORE_BE_DE_OPTION_B.md` for the motivation and equivalence proof.\nOnly meaningful when `resource_classes == 1`.",
+      "properties": {
+        "capacity_per_sqkm_scale": {
+          "default": 1.0,
+          "description": "Multiplicative scale applied to per-bus `p_nom_max` for buses in this country.",
+          "type": "number"
+        },
+        "correction_factor_scale": {
+          "default": 1.0,
+          "description": "Multiplicative scale applied to per-bus `p_max_pu` (capacity-factor time series) for buses in this country.",
+          "type": "number"
+        }
+      }
+    },
     "_CutoutConfig": {
       "description": "Configuration for a single cutout in `atlite.cutouts`.",
       "properties": {
@@ -7562,6 +7658,33 @@
           ],
           "default": 20,
           "description": "Fixed length of the cable connection that is onshorelandfall in km. If 'centroid', the length is calculated as the distance to centroid of the onshore bus."
+        },
+        "country_potential_overrides": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "description": "Per-country multiplicative scaling of `capacity_per_sqkm` and `correction_factor` for renewable potentials.\n\nSee `OFFSHORE_BE_DE_OPTION_B.md` for the motivation and equivalence proof.\nOnly meaningful when `resource_classes == 1`.",
+                "properties": {
+                  "capacity_per_sqkm_scale": {
+                    "default": 1.0,
+                    "description": "Multiplicative scale applied to per-bus `p_nom_max` for buses in this country.",
+                    "type": "number"
+                  },
+                  "correction_factor_scale": {
+                    "default": 1.0,
+                    "description": "Multiplicative scale applied to per-bus `p_max_pu` (capacity-factor time series) for buses in this country.",
+                    "type": "number"
+                  }
+                }
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional ISO2-keyed multiplicative scaling of `p_nom_max` and `p_max_pu` applied at network-attach time. Equivalent to changing `capacity_per_sqkm` and `correction_factor` in the GIS step when `resource_classes == 1`. Used to align BE/DE offshore potentials with validated CCL minimums; see `OFFSHORE_BE_DE_OPTION_B.md`."
         }
       }
     },
@@ -9728,6 +9851,33 @@
               ],
               "default": 20,
               "description": "Fixed length of the cable connection that is onshorelandfall in km. If 'centroid', the length is calculated as the distance to centroid of the onshore bus."
+            },
+            "country_potential_overrides": {
+              "anyOf": [
+                {
+                  "additionalProperties": {
+                    "description": "Per-country multiplicative scaling of `capacity_per_sqkm` and `correction_factor` for renewable potentials.\n\nSee `OFFSHORE_BE_DE_OPTION_B.md` for the motivation and equivalence proof.\nOnly meaningful when `resource_classes == 1`.",
+                    "properties": {
+                      "capacity_per_sqkm_scale": {
+                        "default": 1.0,
+                        "description": "Multiplicative scale applied to per-bus `p_nom_max` for buses in this country.",
+                        "type": "number"
+                      },
+                      "correction_factor_scale": {
+                        "default": 1.0,
+                        "description": "Multiplicative scale applied to per-bus `p_max_pu` (capacity-factor time series) for buses in this country.",
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Optional ISO2-keyed multiplicative scaling of `p_nom_max` and `p_max_pu` applied at network-attach time. Equivalent to changing `capacity_per_sqkm` and `correction_factor` in the GIS step when `resource_classes == 1`. Used to align BE/DE offshore potentials with validated CCL minimums; see `OFFSHORE_BE_DE_OPTION_B.md`."
             }
           }
         },
@@ -9911,6 +10061,33 @@
               ],
               "default": 20,
               "description": "Fixed length of the cable connection that is onshorelandfall in km. If 'centroid', the length is calculated as the distance to centroid of the onshore bus."
+            },
+            "country_potential_overrides": {
+              "anyOf": [
+                {
+                  "additionalProperties": {
+                    "description": "Per-country multiplicative scaling of `capacity_per_sqkm` and `correction_factor` for renewable potentials.\n\nSee `OFFSHORE_BE_DE_OPTION_B.md` for the motivation and equivalence proof.\nOnly meaningful when `resource_classes == 1`.",
+                    "properties": {
+                      "capacity_per_sqkm_scale": {
+                        "default": 1.0,
+                        "description": "Multiplicative scale applied to per-bus `p_nom_max` for buses in this country.",
+                        "type": "number"
+                      },
+                      "correction_factor_scale": {
+                        "default": 1.0,
+                        "description": "Multiplicative scale applied to per-bus `p_max_pu` (capacity-factor time series) for buses in this country.",
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Optional ISO2-keyed multiplicative scaling of `p_nom_max` and `p_max_pu` applied at network-attach time. Equivalent to changing `capacity_per_sqkm` and `correction_factor` in the GIS step when `resource_classes == 1`. Used to align BE/DE offshore potentials with validated CCL minimums; see `OFFSHORE_BE_DE_OPTION_B.md`."
             }
           }
         },
@@ -10094,6 +10271,33 @@
               ],
               "default": 20,
               "description": "Fixed length of the cable connection that is onshorelandfall in km. If 'centroid', the length is calculated as the distance to centroid of the onshore bus."
+            },
+            "country_potential_overrides": {
+              "anyOf": [
+                {
+                  "additionalProperties": {
+                    "description": "Per-country multiplicative scaling of `capacity_per_sqkm` and `correction_factor` for renewable potentials.\n\nSee `OFFSHORE_BE_DE_OPTION_B.md` for the motivation and equivalence proof.\nOnly meaningful when `resource_classes == 1`.",
+                    "properties": {
+                      "capacity_per_sqkm_scale": {
+                        "default": 1.0,
+                        "description": "Multiplicative scale applied to per-bus `p_nom_max` for buses in this country.",
+                        "type": "number"
+                      },
+                      "correction_factor_scale": {
+                        "default": 1.0,
+                        "description": "Multiplicative scale applied to per-bus `p_max_pu` (capacity-factor time series) for buses in this country.",
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Optional ISO2-keyed multiplicative scaling of `p_nom_max` and `p_max_pu` applied at network-attach time. Equivalent to changing `capacity_per_sqkm` and `correction_factor` in the GIS step when `resource_classes == 1`. Used to align BE/DE offshore potentials with validated CCL minimums; see `OFFSHORE_BE_DE_OPTION_B.md`."
             }
           }
         },
