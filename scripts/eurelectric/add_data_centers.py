@@ -193,7 +193,6 @@ def attach_data_centers(n, load_nodal_distribution_fn, profile_fn, params):
             e_nom=load_nom.values.flatten() * dsr["p_pct_nom"] * dsr["shift_hours"],
             capital_cost=dsr["capital_cost"],
             marginal_cost=dsr["marginal_cost"],
-            # marginal_cost_storage=dsr["marginal_cost_storage"],
             carrier="battery",
             e_min_pu=0,
             e_max_pu=1,

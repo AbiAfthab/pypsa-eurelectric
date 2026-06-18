@@ -540,7 +540,7 @@ data_center:
   dsr:
     enable: true
     capital_cost: 0.1
-    marginal_cost: 0.1
+    marginal_cost: 2.
     p_pct_nom: 0.05
     shift_hours: 12
   load:

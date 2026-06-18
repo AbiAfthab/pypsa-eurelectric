@@ -898,11 +898,6 @@
               "default": 6,
               "description": "Maximum hours that load can be shifted forward or backward.",
               "type": "number"
-            },
-            "marginal_cost_storage": {
-              "default": 2,
-              "description": "Cost of storing 1 MWh for 1 hour in the virtual DSR store.",
-              "type": "number"
             }
           }
         },
