@@ -43,7 +43,7 @@ def restrict_heat_pumps(n, snapshots, snakemake):
         """
 
         # Read input file with specific constraints
-        df = pd.read_csv(path, dtype=str)
+        df = pd.read_csv(path, dtype=str, comment="#", skip_blank_lines=True)
 
         schema = pa.DataFrameSchema(
             {
