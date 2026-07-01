@@ -26,6 +26,7 @@ def restrict_heat_pumps(n, snapshots, snakemake):
     Notes:
     - For 'added capacity' constraints, links are filtered to extendable only.
     - For 'supplied heat' constraints, extendability is ignored.
+    - For 'used electricity' constraints, extendability is ignored.
     - If no links match a rule, a hard error is raised.
     """
 
@@ -51,7 +52,7 @@ def restrict_heat_pumps(n, snapshots, snakemake):
                 "constraint_type": pa.Column(
                     str,
                     nullable=False,
-                    checks=pa.Check.isin(["added capacity", "supplied heat"]),
+                    checks=pa.Check.isin(["added capacity", "supplied heat", "used electricity"]),
                 ),
                 "lower": pa.Column(float, nullable=True),
                 "upper": pa.Column(float, nullable=True),
@@ -143,6 +144,28 @@ def restrict_heat_pumps(n, snapshots, snakemake):
             if pd.notna(upper_bound):
                 n.model.add_constraints(
                     lhs <= float(upper_bound), name=f"heat_pump_supplied_heat_upper_{row_id}"
+                )
+        elif constraint_type == "used electricity":
+            
+            # Link-p is p0, which is negative and heat provided in the model, so account for efficiency as well to get the electricity used
+            links_p = n.model["Link-p"].sel(name=matched_links)
+            weightings = xr.DataArray(
+                n.snapshot_weightings.loc[snapshots, "generators"],
+                dims=["snapshot"],
+                coords={"snapshot": snapshots},
+            )
+            efficiency = n.get_switchable_as_dense("Link", "efficiency")[matched_links]
+
+            # Use p0 convention for electricity used accounting.
+            lhs = (-links_p * weightings * efficiency).sum(["snapshot", "name"])
+
+            if pd.notna(lower_bound):
+                n.model.add_constraints(
+                    lhs >= float(lower_bound), name=f"heat_pump_used_electricity_lower_{row_id}"
+                )
+            if pd.notna(upper_bound):
+                n.model.add_constraints(
+                    lhs <= float(upper_bound), name=f"heat_pump_used_electricity_upper_{row_id}"
                 )
 
         logger.info(
