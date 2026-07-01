@@ -1,0 +1,3 @@
+planning_horizon,name_regex,constraint_type,lower,upper
+2030,"DE.+ heat pump-2030","added capacity",1000,100000
+2030,"DE.+ heat pump-2030","supplied heat",1000000,
