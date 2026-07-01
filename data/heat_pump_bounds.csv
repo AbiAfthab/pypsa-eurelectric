@@ -1,3 +1,25 @@
+# This file serves as an input for a custom extra functionality that adds constraints
+# targeted at heat pumps in the model. Three types of constraints can be added
+# 1. added capacity: This constraint limits the total added capacity of heat pumps in the model.
+#    It is restricting `p_nom_opt`, i.e. the nominal heat output capacity of heat pumps.
+#    It only affects heat pump Link components that are set to `p_nom_extendable = True` in the model.
+# 2. supplied heat: This constraint limits the total supplied heat from heat pumps in the model.
+#    It is restricting the total heat output from heat pumps, which is calculated as the sum of `p0`
+#    over all snapshots and all heat pump Link components.
+# 3. used electricity: This constraint limits the total electricity used by heat pumps in the model.
+#    It is restricting the total electricity input to heat pumps, which is calculated as the sum of 
+#    `p0` multiplied by the efficiency of the heat pump over all snapshots and all heat pump Link components.
+#
+# The `name_regex` column allows to specify the affected components by a regex pattern, i.e. all
+# Link components matching this pattern will be subjected to the constraint logic.
+# See https://docs.python.org/3/library/re.html and regex101.com/ for help on regex patterns.
+#
+# The `lower` and `upper` columns specify the lower and upper bounds for the constraint in MW (for capacity) or MWh (for supplied heat and used electricity).
+# If a bound is not specified, it will be ignored and no constraint will be applied for that bound.
+#
+# The `planning_horizon` column specifies the year for which the constraint is applied and is matched
+# again the `planning_horizon` wildcard of the model run.
+
 planning_horizon,name_regex,constraint_type,lower,upper
 # 2030,"DE.+ heat pump-2030","added capacity",1000,
 # 2030,"DE.+ heat pump-2030","supplied heat",1000000,
