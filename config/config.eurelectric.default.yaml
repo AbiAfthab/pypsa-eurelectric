@@ -257,6 +257,7 @@ sector:
     2035: 100
     2040: 240
     2045: 250
+    2050: 250
 
     # Truck fuel shares
   land_transport_truck_fuel_cell_share:
@@ -280,6 +281,7 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
+    2050: 0.00
     # Van fuel shares
   land_transport_van_fuel_cell_share:
     2020: 0
@@ -302,6 +304,7 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
+    2050: 0.00
     # Bus fuel shares
   land_transport_bus_fuel_cell_share:
     2020: 0
@@ -324,6 +327,7 @@ sector:
     2035: 0.75
     2040: 0.50
     2045: 0.25
+    2050: 0.00
 
 # For Electric Efficiency: https://ev-database.org/de/cheatsheet/energy-consumption-electric-car
   # Light : average energy consumption 188 Wh/km = 0.188 kWh/km = 18.8 kWh/100 km = 0.0188 MWh/ 100 km
@@ -532,7 +536,7 @@ data_center:
   dsr:
     enable: true
     capital_cost: 0.1
-    marginal_cost: 0.1
+    marginal_cost: 2.
     p_pct_nom: 0.05
     shift_hours: 12
   enable: true

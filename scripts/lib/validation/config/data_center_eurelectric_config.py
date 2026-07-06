@@ -97,6 +97,7 @@ class _DataCenterLoadConfig(ConfigModel):
         2024, description="Year of  UKPN data set to use for load profile"
     )
 
+
 class DataCenterConfigSection(BaseModel):
     dsr: bool = Field(
         True, description="Enable/disable demand side response via data centers"
