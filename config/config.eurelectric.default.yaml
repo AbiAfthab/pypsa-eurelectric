@@ -99,15 +99,7 @@ electricity:
   # capacity in `conventional_carriers`. NOTE: gas can still appear via the
   # sector backdoor (`sector.chp.fuel: [gas]` and `sector.conventional_generation`).
   extendable_carriers:
-    Generator:
-      [
-        solar,
-        solar-hsat,
-        onwind,
-        offwind-ac,
-        offwind-dc,
-        offwind-float,
-      ]
+    Generator: [solar, solar-hsat, onwind, offwind-ac, offwind-dc, offwind-float]
     StorageUnit: [battery]
     Store: [H2]
     Link: []
@@ -365,6 +357,10 @@ sector:
     # 0.26667 MWh_petrol / 100 km
     # 1 MWh_petrol = 3.75
 
+  transport_passenger_electric_efficiency: 53.19
+  transport_passenger_fuel_cell_efficiency: 30.003
+  transport_passenger_ice_efficiency: 16.0712
+
   transport_truck_electric_efficiency: 25
   transport_truck_fuel_cell_efficiency: 3.565
   transport_truck_ice_efficiency: 3.75
@@ -543,6 +539,7 @@ data_center:
     marginal_cost: 2.
     p_pct_nom: 0.05
     shift_hours: 12
+  enable: true
   load:
     profile: High Voltage Import
     profile_year: 2024
@@ -591,16 +588,17 @@ solving:
     options: gurobi-eurelectric
   solver_options:
     gurobi-eurelectric:
-      NumericFocus: 2
       method: 2
       crossover: 0
-      BarHomogeneous: 1
+      BarHomogeneous: -1
       BarConvTol: 1.0e-05
       FeasibilityTol: 0.0001
       OptimalityTol: 0.0001
-      threads: 14
+      threads: 4
       Seed: 123
+      NumericFocus: 0
       AggFill: 0
       PreDual: 0
       GURO_PAR_BARDENSETHRESH: 200
+      IISMethod: 1
   mem_mb: 128000

@@ -981,6 +981,43 @@ sector:
       gas: 122
       oil: 125
   land_transport_passenger_km_scaling: {}
+  land_transport_truck_km_scaling: {}
+  land_transport_van_km_scaling: {}
+  land_transport_bus_km_scaling: {}
+  land_transport_fuel_shares_enable: false
+  land_transport_fuel_shares_file: data/land_transport_fuel_shares.csv
+  pkw_bev_avail_max: 0.95
+  pkw_bev_avail_mean: 0.8
+  bus_bev_avail_max: 0.9
+  bus_bev_avail_mean: 0.6
+  hd_bev_avail_max: 0.85
+  hd_bev_avail_mean: 0.7
+  lfw_bev_avail_max: 0.92
+  lfw_bev_avail_mean: 0.7
+  land_transport_truck_fuel_cell_share: {}
+  land_transport_truck_electric_share: {}
+  land_transport_truck_ice_share: {}
+  land_transport_van_fuel_cell_share: {}
+  land_transport_van_electric_share: {}
+  land_transport_van_ice_share: {}
+  land_transport_bus_fuel_cell_share: {}
+  land_transport_bus_electric_share: {}
+  land_transport_bus_ice_share: {}
+  transport_passenger_electric_efficiency: 53.19
+  transport_passenger_fuel_cell_efficiency: 30.003
+  transport_passenger_ice_efficiency: 16.0712
+  transport_truck_electric_efficiency: 25.0
+  transport_truck_fuel_cell_efficiency: 3.565
+  transport_truck_ice_efficiency: 3.75
+  transport_van_electric_efficiency: 40.0
+  transport_van_fuel_cell_efficiency: 30.003
+  transport_van_ice_efficiency: 15.6
+  transport_bus_electric_efficiency: 25.0
+  transport_bus_fuel_cell_efficiency: 3.565
+  transport_bus_ice_efficiency: 3.75
+  battery_p_nom_min_enable: false
+  battery_p_nom_min_file: data/battery_p_nom_min.csv
+  battery_p_nom_min_include_existing: true
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#industry
 industry:
@@ -1498,6 +1535,7 @@ data_center:
     marginal_cost: 0.1
     p_pct_nom: 0.05
     shift_hours: 6
+  enable: true
   load:
     profile: High Voltage Import
     profile_year: 2024
