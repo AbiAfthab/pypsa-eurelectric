@@ -107,13 +107,12 @@ def restrict_heat_pumps(n, snapshots, snakemake):
             )
 
         if matched_links.empty:
-            logger.info(
+            raise ValueError(
                 f"Custom heat pump constraint "
                 f"{row_id} has no Links matching the regex '{regex}' "
                 f"(planning_horizon={snakemake.wildcards['planning_horizons']}, "
                 f"constraint_type={constraint_type})."
             )
-            continue
 
         # Limit the additional capacity added in the model run
         if constraint_type == "added capacity":
