@@ -3,14 +3,13 @@
 # SPDX-License-Identifier: MIT
 
 import logging
-import os
-from pathlib import Path
 
-import pandera.pandas as pa
 import pandas as pd
+import pandera.pandas as pa
 import xarray as xr
 
 logger = logging.getLogger(__name__)
+
 
 def restrict_heat_pumps(n, snapshots, snakemake):
     """
@@ -52,7 +51,9 @@ def restrict_heat_pumps(n, snapshots, snakemake):
                 "constraint_type": pa.Column(
                     str,
                     nullable=False,
-                    checks=pa.Check.isin(["added capacity", "supplied heat", "used electricity"]),
+                    checks=pa.Check.isin(
+                        ["added capacity", "supplied heat", "used electricity"]
+                    ),
                 ),
                 "lower": pa.Column(float, nullable=True),
                 "upper": pa.Column(float, nullable=True),
@@ -89,12 +90,11 @@ def restrict_heat_pumps(n, snapshots, snakemake):
 
     # Each row can correspond to one lower and one upper constraint
     for row_id, row in bounds.iterrows():
-
         constraint_type = row["constraint_type"]
 
         lower_bound = row["lower"]
         upper_bound = row["upper"]
-        
+
         # Find the affected links using regex on the name
         regex = row["name_regex"]
         matched_links = n.links.filter(regex=regex, axis="index").index
@@ -102,31 +102,35 @@ def restrict_heat_pumps(n, snapshots, snakemake):
         # Apply this constraint only to extendable links
         # non-extendable links are not covered, because they do not have corresponding linopy variables
         if constraint_type == "added capacity":
-            matched_links = n.links.loc[matched_links].query("`p_nom_extendable` == True").index
+            matched_links = (
+                n.links.loc[matched_links].query("`p_nom_extendable` == True").index
+            )
 
         if matched_links.empty:
-            logger.debug(f"Custom heat pump constraint "
-                         f"{row_id} has no Links matching the regex '{regex}' "
-                         f"(planning_horizon={snakemake.wildcards['planning_horizons']}, "
-                         f"constraint_type={constraint_type}).")
-
+            logger.info(
+                f"Custom heat pump constraint "
+                f"{row_id} has no Links matching the regex '{regex}' "
+                f"(planning_horizon={snakemake.wildcards['planning_horizons']}, "
+                f"constraint_type={constraint_type})."
+            )
+            continue
 
         # Limit the additional capacity added in the model run
         if constraint_type == "added capacity":
-
             lhs = n.model["Link-p_nom"].loc[matched_links].sum()
 
             if pd.notna(lower_bound):
                 n.model.add_constraints(
-                    lhs >= float(lower_bound), name=f"heat_pump_additional_capacity_lower_{row_id}"
+                    lhs >= float(lower_bound),
+                    name=f"heat_pump_additional_capacity_lower_{row_id}",
                 )
             if pd.notna(upper_bound):
                 n.model.add_constraints(
-                    lhs <= float(upper_bound), name=f"heat_pump_additional_capacity_upper_{row_id}"
+                    lhs <= float(upper_bound),
+                    name=f"heat_pump_additional_capacity_upper_{row_id}",
                 )
 
         elif constraint_type == "supplied heat":
-
             links_p = n.model["Link-p"].sel(name=matched_links)
             weightings = xr.DataArray(
                 n.snapshot_weightings.loc[snapshots, "generators"],
@@ -139,14 +143,15 @@ def restrict_heat_pumps(n, snapshots, snakemake):
 
             if pd.notna(lower_bound):
                 n.model.add_constraints(
-                    lhs >= float(lower_bound), name=f"heat_pump_supplied_heat_lower_{row_id}"
+                    lhs >= float(lower_bound),
+                    name=f"heat_pump_supplied_heat_lower_{row_id}",
                 )
             if pd.notna(upper_bound):
                 n.model.add_constraints(
-                    lhs <= float(upper_bound), name=f"heat_pump_supplied_heat_upper_{row_id}"
+                    lhs <= float(upper_bound),
+                    name=f"heat_pump_supplied_heat_upper_{row_id}",
                 )
         elif constraint_type == "used electricity":
-            
             # Link-p is p0, which is negative and heat provided in the model, so account for efficiency as well to get the electricity used
             links_p = n.model["Link-p"].sel(name=matched_links)
             weightings = xr.DataArray(
@@ -161,11 +166,13 @@ def restrict_heat_pumps(n, snapshots, snakemake):
 
             if pd.notna(lower_bound):
                 n.model.add_constraints(
-                    lhs >= float(lower_bound), name=f"heat_pump_used_electricity_lower_{row_id}"
+                    lhs >= float(lower_bound),
+                    name=f"heat_pump_used_electricity_lower_{row_id}",
                 )
             if pd.notna(upper_bound):
                 n.model.add_constraints(
-                    lhs <= float(upper_bound), name=f"heat_pump_used_electricity_upper_{row_id}"
+                    lhs <= float(upper_bound),
+                    name=f"heat_pump_used_electricity_upper_{row_id}",
                 )
 
         logger.info(
