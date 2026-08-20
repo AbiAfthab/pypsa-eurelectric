@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=../schema.default.json
+# SPDX-FileCopyrightText: Contributors to PyPSA-Eurelectric
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# Grid study - shared base overlay.
+# Stacks on top of config/config.eurelectric.default.yaml:
+#   snakemake -call solve_sector_networks \
+#     --configfile config/config.eurelectric.default.yaml \
+#                 config/grid-study/config.base-2040.yaml \
+#                 config/grid-study/config.build-2040.yaml
+#
+# Keeps the eurelectric default MYOPIC 2030->2040 pathway. Myopic is required
+# here because the per-country heat-pump caps in data/heat_pump_bounds.csv only
+# bind in the myopic workflow: they target cohort-suffixed link names
+# (e.g. "AT.+ heat pump-2040") produced by add_existing_baseyear / add_brownfield,
+# which do not exist in an overnight greenfield solve. Holding electrification
+# fixed via those caps is what forces the distribution-grid cap (inaction
+# scenario) to manifest as grid scarcity / higher network cost rather than the
+# model quietly electrifying less. See data/custom_extra_functionality.py.
+#
+# This overlay therefore only changes study-specific knobs (run prefix, faster
+# diagnostic resolution). The myopic horizons, per-horizon costs, emission
+# prices and co2_budget trajectory (incl. 2030) are inherited unchanged from
+# config.eurelectric.default.yaml. Distribution grid stays ON at NORMAL cost in
+# every scenario - the Build vs investment-constrained difference comes only
+# from the annual-investment cap applied in data/custom_extra_functionality.py
+# (gated on grid_study.distribution_grid_budget_bn_per_year).
+
+run:
+  prefix: "2026-grid-study"
+  shared_cutouts: true
+  disable_progressbar: true
+
+foresight: myopic
+
+scenario:
+  clusters: [37]
+  opts: [""]
+  sector_opts: [""]
+  planning_horizons: [2030, 2040]
+
+sector:
+  electricity_distribution_grid: true
+
+# Initial fast diagnostic resolution (~6h). Adaptive segmentation (NOT fixed
+# "6h") preserves demand peaks, which matter because the distribution link is
+# sized by peak flow. Re-run the final numbers at "2920SEG" (or finer) before
+# reporting - the headline result is peak-driven.
+clustering:
+  temporal:
+    resolution_sector: "1460SEG"

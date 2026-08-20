@@ -173,6 +173,97 @@ def restrict_heat_pumps(n, snapshots, snakemake):
         )
 
 
+def restrict_distribution_grid_investment(n, snapshots, snakemake):
+    """
+    Cap annualised distribution-grid investment for grid-study scenarios.
+
+    Reads the annual investment budget (in bn EUR/year) from
+    ``config["grid_study"]["distribution_grid_budget_bn_per_year"]``. The value
+    may take three forms:
+
+    * ``None`` (or unset): no constraint is added and the distribution grid
+      expands freely (the "Build" scenario).
+    * a scalar (int/float): the same cap is applied in every planning horizon.
+    * a mapping ``{year: budget}``: a per-horizon trajectory. This is the usual
+      form for myopic runs, where the cost-optimal investment differs strongly
+      between horizons (e.g. 2030 vs. the incremental 2040 build). Years absent
+      from the mapping - or explicitly set to ``null`` - are left uncapped.
+
+    When a cap applies, total annualised capital expenditure on extendable
+    ``electricity distribution grid`` links is limited to the budget:
+
+        sum_over_links(Link-p_nom [MW] * capital_cost [EUR/MW/yr]) <= budget [EUR/yr]
+
+    In myopic runs the previously-built grid is carried forward as fixed
+    (non-extendable) capacity, so the cap bites only on the capacity ADDED in
+    the horizon being solved.
+
+    Both scenarios keep identical (normal) technology costs, so the resulting
+    objective difference is a genuine system consequence of the investment
+    restriction rather than an artefact of a cost multiplier.
+    """
+
+    budget_cfg = snakemake.config.get("grid_study", {}).get(
+        "distribution_grid_budget_bn_per_year"
+    )
+
+    if budget_cfg is None:
+        logger.info("grid_study: no distribution-grid investment budget applied.")
+        return
+
+    # Resolve the budget for the horizon currently being solved.
+    if isinstance(budget_cfg, dict):
+        year = snakemake.wildcards["planning_horizons"]
+        # YAML parses bare years as ints; the wildcard is a string - try both.
+        budget_bn = budget_cfg.get(int(year), budget_cfg.get(str(year)))
+        if budget_bn is None:
+            logger.info(
+                "grid_study: no distribution-grid investment budget for "
+                "planning_horizon=%s; leaving grid uncapped this horizon.",
+                year,
+            )
+            return
+    else:
+        budget_bn = budget_cfg
+
+    grid_links = n.links.index[
+        (n.links.carrier == "electricity distribution grid") & n.links.p_nom_extendable
+    ]
+
+    if grid_links.empty:
+        raise ValueError(
+            "grid_study: no extendable 'electricity distribution grid' links found."
+        )
+
+    p_nom = n.model["Link-p_nom"].loc[grid_links]
+
+    if len(p_nom.dims) != 1:
+        raise ValueError(
+            "grid_study: expected Link-p_nom selection to be one-dimensional, "
+            f"but found dimensions {p_nom.dims}."
+        )
+
+    link_dim = p_nom.dims[0]
+
+    capital_cost = xr.DataArray(
+        n.links.loc[grid_links, "capital_cost"].to_numpy(),
+        dims=[link_dim],
+        coords={link_dim: p_nom.coords[link_dim]},
+    )
+
+    annual_investment = (p_nom * capital_cost).sum()
+
+    n.model.add_constraints(
+        annual_investment <= float(budget_bn) * 1e9,
+        name="distribution_grid_investment_budget",
+    )
+
+    logger.info(
+        "grid_study: distribution-grid annualised investment capped at %.3f bn EUR/yr.",
+        float(budget_bn),
+    )
+
+
 def custom_extra_functionality(n, snapshots, snakemake):
     """
     Add custom extra functionality constraints.
@@ -181,3 +272,7 @@ def custom_extra_functionality(n, snapshots, snakemake):
     # Restrict the capacity expansion of heat pump groups
     # as well as the annual generation from heat pumps
     restrict_heat_pumps(n, snapshots, snakemake)
+
+    # Cap annualised distribution-grid investment (grid-study scenarios only;
+    # no-op unless config["grid_study"]["distribution_grid_budget_bn_per_year"] is set)
+    restrict_distribution_grid_investment(n, snapshots, snakemake)

@@ -1,0 +1,1 @@
+TRIAL: this workbook injected PyPSA absolute DSO overnight CAPEX into Excel row 17. It is kept for reference only. The live workbook AllowableRevenue_MiniModelEurope_PyPSA.xlsx uses the original Excel CAPEX trajectory as the Build baseline and scales it by PyPSA scenario/Build DSO overnight ratios.
