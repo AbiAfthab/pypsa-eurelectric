@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=../schema.default.json
+# SPDX-FileCopyrightText: Contributors to PyPSA-Eurelectric
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# Grid study - "Inaction" scenario (75%).
+# Caps annualised distribution-grid investment at 75% of the cost-optimal level
+# revealed by the Build run (D*), per horizon. Because myopic carries the
+# previously-built grid forward as sunk/fixed capacity, the cap bites only on
+# the capacity ADDED in each horizon:
+#
+#   Build D* (extendable / newly-added, annualised):
+#     2030: 30.666 bn EUR/yr  -> 75% = 23.000
+#     2040: 14.184 bn EUR/yr  -> 75% = 10.638
+#
+# This point sits between the clean 85% substitution regime and the 50%
+# load-shedding cliff, to locate where unserved energy starts to appear.
+# Load shedding stays ON (10 000 EUR/MWh). Distinct run.name so results
+# coexist with Build, 85% (mild85) and 50% (moderate).
+#
+# Run (stacks base overlay + this file); myopic solves 2030 then 2040:
+#   snakemake -call solve_sector_networks \
+#     --configfile config/config.eurelectric.default.yaml \
+#                 config/grid-study/config.base-2040.yaml \
+#                 config/grid-study/config.inaction-2040-mild75.yaml
+
+run:
+  name: "grid-inaction-2040-mild75"
+
+grid_study:
+  # Per-horizon annualised investment cap (bn EUR/yr) on ADDED distribution grid.
+  distribution_grid_budget_bn_per_year:
+    2030: 23.000
+    2040: 10.638

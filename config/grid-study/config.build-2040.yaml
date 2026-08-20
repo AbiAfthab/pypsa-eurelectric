@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=../schema.default.json
+# SPDX-FileCopyrightText: Contributors to PyPSA-Eurelectric
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# Grid study - "Build" scenario: unrestricted cost-optimal distribution-grid
+# expansion at normal (1x) technology costs. No investment cap.
+#
+# Run (stacks base overlay + this file); myopic solves 2030 then 2040:
+#   snakemake -call solve_sector_networks \
+#     --configfile config/config.eurelectric.default.yaml \
+#                 config/grid-study/config.base-2040.yaml \
+#                 config/grid-study/config.build-2040.yaml
+#
+# After solving, read the optimal annual distribution investment from the 2040
+# horizon network (extendable links only, i.e. capacity ADDED that horizon):
+#   D* = sum(p_nom_opt * capital_cost) over carrier "electricity distribution grid"
+# and set the investment-constrained (inaction) sweep budgets as fractions of D*.
+
+run:
+  name: "grid-build-2040"
+
+grid_study:
+  distribution_grid_budget_bn_per_year: null

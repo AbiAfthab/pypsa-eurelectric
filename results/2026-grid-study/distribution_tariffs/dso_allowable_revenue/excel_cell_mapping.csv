@@ -1,0 +1,12 @@
+Excel sheet,Cell/range,Quantity written,Source,Notes
+PyPSA_Build,H17:V17 (2026-2040),original Excel CAPEX (Build baseline),Sheet1 row 17,Not replaced. PyPSA absolute overnight is not injected.
+PyPSA_85/75/65/50pct,H17:L17 (2026-2030),Excel CAPEX × (scenario 2030 overnight / Build 2030 overnight),PyPSA ratio only,Typically 0.85/0.75/0.65/0.50 × 72 bn €/yr.
+PyPSA_85/75/65/50pct,M17:V17 (2031-2040),Excel CAPEX × (scenario 2040 overnight / Build 2040 overnight),PyPSA ratio only,2040 cohort ratio; 2030 brownfield not recounted.
+PyPSA_*,W17:AN17 (2041+),(unchanged),Original Excel,No PyPSA 2050 network; left as original 60 bn/yr for all scenarios.
+PyPSA_*,B17:G17 (2020-2025),(unchanged original historical CAPEX),Original Excel,Kept so the RAB path to today is the same in every scenario.
+PyPSA_*,G30,2030 DSO HV→LV delivery (TWh),"weighted -min(p1,0) on costed DSO links",Overwrites formula G29*$B$31 so the 80% DSO-share is NOT applied to PyPSA.
+PyPSA_*,H30,2040 DSO HV→LV delivery (TWh),same,Same 80% caveat.
+PyPSA_*,G35 / H35,Direct DSO tariff = MAR × 1000 / TWh DSO,L22 / V22 and G30 / H30,This is allowable revenue / distributed electricity. Original G34/H34 still use the 2020-revenue scaling method.
+PyPSA_*,"B8,B9,B11,B12,B13,B17:G17,F29,F30,I29,I30,B29",(unchanged),Original Excel assumptions,"WACC 5.4%, lifetime 42, starting RAB 700 bn, OPEX method, 2020 volumes, today's 53 EUR/MWh."
+PyPSA_*,"Rows 16,18-24",(formulas unchanged),Original Excel,"Opening RAB, depreciation, new RAB, MAR, OPEX, ratios."
+Original_Sheet1 / Sheet1,(all),(untouched copy of the original model),Original workbook,Original Excel result; do not use for PyPSA cases.
